@@ -2,153 +2,122 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LucyRace - GPS & Fuel Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LucyRace - Moto App</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Estilo Modo Oscuro Profesional 🌌 */
-        body {
-            background-color: #0b0e14;
-            color: #e0e0e0;
-            font-family: sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+        body { margin: 0; padding: 0; background: #000; font-family: sans-serif; color: #fff; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+        
+        /* Controles - Subidos para evitar el menú del móvil */
+        .controls { 
+            position: absolute; bottom: 80px; left: 10px; right: 10px; 
+            background: rgba(0,0,0,0.85); padding: 15px; border-radius: 15px;
+            z-index: 1000; border: 2px solid #0f0; box-shadow: 0 0 15px #0f0;
         }
 
-        /* Contenedor del Mapa 🗺️ */
-        #map {
-            flex-grow: 1;
-            width: 100%;
-            background: #1a1d23;
+        .stats { display: flex; justify-content: space-around; margin-bottom: 10px; font-weight: bold; }
+        .stat-box { text-align: center; }
+        .stat-val { display: block; font-size: 1.2em; color: #0f0; }
+
+        button { 
+            width: 100%; padding: 15px; border: none; border-radius: 10px; 
+            font-size: 1.1em; font-weight: bold; cursor: pointer; text-transform: uppercase;
         }
-
-        /* Panel de Control Inferior 🛠️ */
-        .dashboard {
-            background-color: #1a1d23;
-            padding: 20px;
-            border-top: 2px solid #2d333b;
-            text-align: center;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-        }
-
-        .gas-display {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #00ff41;
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-            margin-bottom: 10px;
-        }
-
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            color: #888;
-        }
-
-        .stats span { color: #fff; font-weight: bold; }
-
-        input[type=range] {
-            width: 90%;
-            margin: 15px 0;
-            -webkit-appearance: none;
-            background: transparent;
-        }
-
-        input[type=range]::-webkit-slider-runnable-track {
-            height: 8px;
-            background: #2d333b;
-            border-radius: 4px;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #00ff41;
-            -webkit-appearance: none;
-            margin-top: -6px;
-        }
-
-        button {
-            padding: 12px 30px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 25px;
-            border: none;
-            cursor: pointer;
-            width: 80%;
-            transition: 0.3s;
-        }
-
-        .btn-start { background-color: #00ff41; color: #0b0e14; }
-        .btn-pause { background-color: #ffaa00; color: #0b0e14; display: none; }
+        .btn-start { background: #0f0; color: #000; }
+        .btn-pause { background: #ffae00; color: #000; display: none; }
+        .btn-stop { background: #ff0000; color: #fff; display: none; margin-top: 10px; }
+        
+        #fuel-selector { margin-top: 10px; width: 100%; accent-color: #0f0; }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
 
-    <div class="dashboard">
+    <div class="controls">
         <div class="stats">
-            <div>Distancia: <span id="dist">0.0</span> km</div>
-            <div>Tiempo: <span id="time">00:00</span></div>
+            <div class="stat-box">TIEMPO<span id="time" class="stat-val">00:00</span></div>
+            <div class="stat-box">DISTANCIA<span id="dist" class="stat-val">0.0 km</span></div>
+            <div class="stat-box">GASOLINA<span id="fuel" class="stat-val">-- L</span></div>
         </div>
 
-        <div class="gas-display">
-            <span id="litros-val">10.0</span> L
+        <div id="setup-area">
+            <label>Litros en tanque: <span id="fuel-val">10</span>L</label>
+            <input type="range" id="fuel-selector" min="1" max="20" value="10">
+            <button class="btn-start" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
 
-        <input type="range" id="gas-slider" min="1.0" max="14.0" step="0.5" value="10.0">
-        
-        <button id="main-btn" class="btn-start">¡A RODAR! 🏍️</button>
+        <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">EN ESPERA / PAUSA ⏳</button>
+        <button id="stop-btn" class="btn-stop" onclick="finalizarRuta()">TERMINAR RUTA 🏁</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. Inicializar Mapa (Usa una ubicación por defecto)
-        const map = L.map('map').setView([10.64, -71.61], 15); // Cambiar coordenadas según tu ciudad
+        // Inicializar Mapa
+        let map = L.map('map').setView([10.64, -71.61], 15); // Default, saltará con GPS
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        let path = L.polyline([], {color: '#00ff41', weight: 5}).addTo(map);
-        let marker = L.circleMarker([10.64, -71.61], {radius: 8, color: '#fff', fillOpacity: 1}).addTo(map);
+        let path = L.polyline([], {color: '#0f0', weight: 5}).addTo(map);
+        let marker = L.marker([0,0]).addTo(map);
 
-        // 2. Lógica de Gasolina
-        const slider = document.getElementById('gas-slider');
-        const display = document.getElementById('litros-val');
-        const mainBtn = document.getElementById('main-btn');
-        let enRuta = false;
+        // Variables de Lógica
+        let totalDist = 0, segs = 0, timer, watchID;
+        let rutaActiva = false, enPausa = false;
+        let fuelInicial = 10;
 
-        slider.oninput = function() {
-            display.innerHTML = parseFloat(this.value).toFixed(1);
-            display.style.color = (this.value <= 3) ? "#ff4141" : "#00ff41";
-        }
+        // Actualizar selector litros
+        document.getElementById('fuel-selector').oninput = function() {
+            fuelInicial = this.value;
+            document.getElementById('fuel-val').innerText = this.value;
+            document.getElementById('fuel').innerText = this.value + " L";
+        };
 
-        // 3. Simulación de grabación y "Modo Espera"
-        mainBtn.onclick = function() {
-            if (!enRuta) {
-                // Iniciar Ruta
-                enRuta = true;
-                mainBtn.innerHTML = "MODO ESPERA ⏳";
-                mainBtn.className = "btn-pause";
-                slider.style.display = "none"; // Ocultar slider al rodar
-                startGPS();
-            } else {
-                // Pausar (Modo Espera)
-                alert("Entrando en Modo Espera en la ubicación del cliente...");
-                enRuta = false;
-                mainBtn.innerHTML = "REANUDAR RUTA ▶️";
-                mainBtn.className = "btn-start";
+        function iniciarRuta() {
+            rutaActiva = true;
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'block';
+            document.getElementById('stop-btn').style.display = 'block';
+            
+            // Iniciar Cronómetro
+            timer = setInterval(() => {
+                if(!enPausa) {
+                    segs++;
+                    let m = Math.floor(segs/60).toString().padStart(2,'0');
+                    let s = (segs%60).toString().padStart(2,'0');
+                    document.getElementById('time').innerText = `${m}:${s}`;
+                }
+            }, 1000);
+
+            // Activar GPS
+            if(navigator.geolocation) {
+                watchID = navigator.geolocation.watchPosition(pos => {
+                    if(enPausa) return;
+                    let lat = pos.coords.latitude;
+                    let lon = pos.coords.longitude;
+                    let newPos = [lat, lon];
+                    
+                    marker.setLatLng(newPos);
+                    path.addLatLng(newPos);
+                    map.setView(newPos);
+                    
+                    // Aquí luego calcularemos la distancia real
+                }, err => alert("Activa el GPS, Amo"), {enableHighAccuracy: true});
             }
         }
 
-        function startGPS() {
-            // Aquí iría la conexión real con el GPS del móvil navigator.geolocation.watchPosition
-            console.log("Lucy está grabando la línea del mapa...");
+        function pausarRuta() {
+            enPausa = !enPausa;
+            let btn = document.getElementById('pause-btn');
+            btn.innerText = enPausa ? "REANUDAR RUTA ▶️" : "EN ESPERA / PAUSA ⏳";
+            btn.style.background = enPausa ? "#0f0" : "#ffae00";
+        }
+
+        function finalizarRuta() {
+            clearInterval(timer);
+            navigator.geolocation.clearWatch(watchID);
+            alert("Ruta terminada. ¡Buen trabajo!");
+            location.reload(); // Reinicia para la siguiente
         }
     </script>
 </body>
