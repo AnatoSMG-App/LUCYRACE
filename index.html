@@ -3,32 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LucyRace - Moto App</title>
+    <title>LucyRace V2 - GPS & Fuel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; background: #000; font-family: sans-serif; color: #fff; overflow: hidden; }
+        body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        /* Controles - Subidos para evitar el menú del móvil */
         .controls { 
-            position: absolute; bottom: 80px; left: 10px; right: 10px; 
-            background: rgba(0,0,0,0.85); padding: 15px; border-radius: 15px;
-            z-index: 1000; border: 2px solid #0f0; box-shadow: 0 0 15px #0f0;
+            position: absolute; bottom: 30px; left: 15px; right: 15px; 
+            background: rgba(0,0,0,0.9); padding: 20px; border-radius: 20px;
+            z-index: 1000; border: 3px solid #0f0; box-shadow: 0 0 20px #0f0;
         }
 
-        .stats { display: flex; justify-content: space-around; margin-bottom: 10px; font-weight: bold; }
+        .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
         .stat-box { text-align: center; }
-        .stat-val { display: block; font-size: 1.2em; color: #0f0; }
+        .stat-label { font-size: 0.8em; color: #0f0; font-weight: bold; display: block; }
+        .stat-val { font-size: 1.4em; font-weight: bold; }
 
         button { 
-            width: 100%; padding: 15px; border: none; border-radius: 10px; 
-            font-size: 1.1em; font-weight: bold; cursor: pointer; text-transform: uppercase;
+            width: 100%; padding: 18px; border: none; border-radius: 12px; 
+            font-size: 1.2em; font-weight: bold; cursor: pointer; transition: 0.3s;
         }
         .btn-start { background: #0f0; color: #000; }
-        .btn-pause { background: #ffae00; color: #000; display: none; }
-        .btn-stop { background: #ff0000; color: #fff; display: none; margin-top: 10px; }
+        .btn-pause { background: #ffae00; color: #000; display: none; margin-bottom: 10px; }
+        .btn-stop { background: #ff0000; color: #fff; display: none; }
         
-        #fuel-selector { margin-top: 10px; width: 100%; accent-color: #0f0; }
+        #fuel-slider { width: 100%; margin-top: 15px; accent-color: #0f0; }
+        #setup-area label { display: block; text-align: center; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -37,15 +38,15 @@
 
     <div class="controls">
         <div class="stats">
-            <div class="stat-box">TIEMPO<span id="time" class="stat-val">00:00</span></div>
-            <div class="stat-box">DISTANCIA<span id="dist" class="stat-val">0.0 km</span></div>
-            <div class="stat-box">GASOLINA<span id="fuel" class="stat-val">-- L</span></div>
+            <div class="stat-box"><span class="stat-label">TIEMPO</span><span id="time" class="stat-val">00:00</span></div>
+            <div class="stat-box"><span class="stat-label">DISTANCIA</span><span id="dist" class="stat-val">0.0 km</span></div>
+            <div class="stat-box"><span class="stat-label">GASOLINA</span><span id="fuel" class="stat-val">10 L</span></div>
         </div>
 
         <div id="setup-area">
             <label>Litros en tanque: <span id="fuel-val">10</span>L</label>
-            <input type="range" id="fuel-selector" min="1" max="20" value="10">
-            <button class="btn-start" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
+            <input type="range" id="fuel-slider" min="1" max="20" value="10">
+            <button class="btn-start" style="margin-top:15px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
 
         <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">EN ESPERA / PAUSA ⏳</button>
@@ -54,32 +55,28 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Inicializar Mapa
-        let map = L.map('map').setView([10.64, -71.61], 15); // Default, saltará con GPS
+        // Configuración de Mapa
+        let map = L.map('map').setView([10.17, -67.92], 15); // Inicia en Valencia por defecto
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        let path = L.polyline([], {color: '#0f0', weight: 5}).addTo(map);
-        let marker = L.marker([0,0]).addTo(map);
+        let path = L.polyline([], {color: '#0f0', weight: 6, opacity: 0.8}).addTo(map);
+        let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        // Variables de Lógica
-        let totalDist = 0, segs = 0, timer, watchID;
-        let rutaActiva = false, enPausa = false;
-        let fuelInicial = 10;
+        // Lógica de la App
+        let segs = 0, timer, watchID;
+        let enPausa = false;
 
-        // Actualizar selector litros
-        document.getElementById('fuel-selector').oninput = function() {
-            fuelInicial = this.value;
+        document.getElementById('fuel-slider').oninput = function() {
             document.getElementById('fuel-val').innerText = this.value;
             document.getElementById('fuel').innerText = this.value + " L";
         };
 
         function iniciarRuta() {
-            rutaActiva = true;
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('pause-btn').style.display = 'block';
             document.getElementById('stop-btn').style.display = 'block';
             
-            // Iniciar Cronómetro
+            // Iniciar Reloj
             timer = setInterval(() => {
                 if(!enPausa) {
                     segs++;
@@ -89,20 +86,18 @@
                 }
             }, 1000);
 
-            // Activar GPS
+            // Activar Localización Real
             if(navigator.geolocation) {
                 watchID = navigator.geolocation.watchPosition(pos => {
                     if(enPausa) return;
                     let lat = pos.coords.latitude;
                     let lon = pos.coords.longitude;
-                    let newPos = [lat, lon];
+                    let p = [lat, lon];
                     
-                    marker.setLatLng(newPos);
-                    path.addLatLng(newPos);
-                    map.setView(newPos);
-                    
-                    // Aquí luego calcularemos la distancia real
-                }, err => alert("Activa el GPS, Amo"), {enableHighAccuracy: true});
+                    marker.setLatLng(p);
+                    path.addLatLng(p);
+                    map.panTo(p);
+                }, err => alert("Por favor activa tu GPS"), {enableHighAccuracy: true});
             }
         }
 
@@ -116,8 +111,8 @@
         function finalizarRuta() {
             clearInterval(timer);
             navigator.geolocation.clearWatch(watchID);
-            alert("Ruta terminada. ¡Buen trabajo!");
-            location.reload(); // Reinicia para la siguiente
+            alert("Ruta terminada. ¡Buen trabajo, Amo!");
+            location.reload(); 
         }
     </script>
 </body>
