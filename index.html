@@ -38,6 +38,9 @@
         .btn-semana { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .btn-semana button { padding: 12px; background: #eee; font-size: 0.8em; color: #000; border-radius: 12px; border: 1px solid #ccc; height: 50px; }
         .base-label { background: #000 !important; color: #0f0 !important; border: 1.5px solid #0f0 !important; font-weight: 900 !important; font-size: 0.75em !important; padding: 2px 5px !important; opacity: 1 !important; }
+        /* Estilo para lista de clientes en historial */
+        .item-cliente { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 5px; border: 1px solid #ddd; color: #333; }
+        .btn-borrar-mini { background: #ff0000; color: #fff; width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 0.8em; }
     </style>
 </head>
 <body>
@@ -56,7 +59,9 @@
         <div class="card-informe" style="background: #28a745; margin-top:10px;">CORTE 7 DÍAS:<br><span id="c7-txt">0km | 0L | $0.00</span></div>
         <div class="card-informe" style="background: #17a2b8;">CORTE 15 DÍAS:<br><span id="c15-txt">0km | 0L | $0.00</span></div>
         <div class="card-informe" style="background: #6f42c1;">CORTE 30 DÍAS (MENSUAL):<br><span id="c30-txt">0km | 0L | $0.00</span></div>
-        <div id="detalle-dia">Toca un día para ver el desglose completo.</div>
+        
+        <div id="detalle-dia"><b>HISTORIAL DE CLIENTES:</b><div id="lista-clientes-historial"></div></div>
+        
         <div class="btn-semana">
             <button onclick="verDia(this, 'Lunes')">LUN</button>
             <button onclick="verDia(this, 'Martes')">MAR</button>
@@ -108,9 +113,10 @@
         let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
         let poly = L.polyline([], {color: '#0f0', weight: 5}).addTo(map);
 
-        let tC = 0, tE = 0, timerC, timerE, dC = 0, dE = 0, fuelI = 10, fuelR = 10, enP = false, enE = false, baseFijada = false;
+        let tC = 0, tE = 0, timerC, timerE, dC = 0, dE = 0, fuelI = 10, fuelR = 10, enP = false, enE = false, baseFijada = false, grabando = false;
         let factor = 0.05; const PRECIO = 0.50;
         let ultimaPos = null;
+        let marcadoresMapa = [];
 
         // CARGA DE MEMORIA
         let DB = JSON.parse(localStorage.getItem('lucy_data')) || { etiquetas: [], acumulado: {km:0, l:0, m:0} };
@@ -132,7 +138,7 @@
                 map.setView(latlng, 17);
                 baseFijada = true;
             }
-            if(ultimaPos && !enP) {
+            if(ultimaPos && grabando && !enP) {
                 let d = getDist(ultimaPos, latlng);
                 if(d > 0.005) { 
                     if(enE) dE += d; else dC += d;
@@ -167,10 +173,13 @@
         }
 
         function iniciarRuta() {
+            grabando = true;
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('run-area').style.display = 'block';
-            timerC = setInterval(() => { if(!enP) { tC++; document.getElementById('c-time').innerText = fmt(tC); } }, 1000);
-            timerE = setInterval(() => { if(enE) { tE++; document.getElementById('e-time').innerText = fmt(tE); } }, 1000);
+            if(timerC) clearInterval(timerC);
+            if(timerE) clearInterval(timerE);
+            timerC = setInterval(() => { if(grabando && !enP) { tC++; document.getElementById('c-time').innerText = fmt(tC); } }, 1000);
+            timerE = setInterval(() => { if(grabando && enE) { tE++; document.getElementById('e-time').innerText = fmt(tE); } }, 1000);
         }
 
         function calibrar() {
@@ -190,20 +199,13 @@
 
         function crearEtiqueta(latlng, nombre, guardar = true) {
             let m = L.marker(latlng).addTo(map).bindTooltip(nombre.toUpperCase(), {permanent: true, className: 'base-label'});
-            let temp;
-            m.on('mousedown touchstart', () => {
-                temp = setTimeout(() => {
-                    if(confirm("¿Eliminar etiqueta: " + nombre + "?")) {
-                        map.removeLayer(m);
-                        DB.etiquetas = DB.etiquetas.filter(x => x.n !== nombre);
-                        localStorage.setItem('lucy_data', JSON.stringify(DB));
-                    }
-                }, 3000);
-            });
-            m.on('mouseup mouseleave touchend', () => clearTimeout(temp));
+            m.nombreAsignado = nombre;
+            marcadoresMapa.push(m);
+
             if(guardar) {
                 DB.etiquetas.push({l: latlng, n: nombre});
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
+                actualizarListaHistorial();
             }
         }
 
@@ -211,14 +213,45 @@
             enP = !enP; 
             document.getElementById('pause-btn').innerText = enP ? "REANUDAR ▶️" : "MARCAR / PAUSA 📍"; 
             if(enP && ultimaPos) {
-                let n = prompt("¿Nombre del lugar?");
+                let n = prompt("¿Nombre del lugar o Cliente?");
                 if(n) crearEtiqueta(ultimaPos, n);
             }
         }
 
         function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); }
-        function abrirInforme() { document.getElementById('pantalla-informe').style.display = 'block'; }
+        
+        function abrirInforme() { 
+            actualizarListaHistorial();
+            document.getElementById('pantalla-informe').style.display = 'block'; 
+        }
+        
         function cerrarInforme() { document.getElementById('pantalla-informe').style.display = 'none'; }
+
+        function actualizarListaHistorial() {
+            const lista = document.getElementById('lista-clientes-historial');
+            lista.innerHTML = "";
+            DB.etiquetas.forEach((item, index) => {
+                let div = document.createElement('div');
+                div.className = 'item-cliente';
+                div.innerHTML = `<span><b>Cliente:</b> ${item.n.toUpperCase()}</span> 
+                                 <button class="btn-borrar-mini" onclick="borrarRegistro(${index})">X</button>`;
+                lista.appendChild(div);
+            });
+        }
+
+        function borrarRegistro(index) {
+            if(confirm("¿Borrar este registro definitivamente?")) {
+                let nombreBorrar = DB.etiquetas[index].n;
+                // Borrar del Mapa
+                marcadoresMapa.forEach(m => {
+                    if(m.nombreAsignado === nombreBorrar) map.removeLayer(m);
+                });
+                // Borrar de DB
+                DB.etiquetas.splice(index, 1);
+                localStorage.setItem('lucy_data', JSON.stringify(DB));
+                actualizarListaHistorial();
+            }
+        }
         
         function verDia(btn, dia) {
             document.querySelectorAll('.btn-semana button').forEach(b => b.style.background = '#eee');
@@ -232,7 +265,8 @@
                 DB.acumulado.km += (dC + dE);
                 DB.acumulado.l += ((dC + dE) * factor);
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
-                alert("Día finalizado y guardado."); 
+                grabando = false;
+                alert("Día finalizado. Contadores reseteados."); 
                 location.reload(); 
             }
         }
