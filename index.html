@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V4.8 FIXED</title>
+    <title>LUCY JHA - V4.8 FINAL PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #header { position: absolute; top: 10px; width: 100%; display: flex; justify-content: center; z-index: 1000; pointer-events: none; }
         #header h1 { margin: 0; font-size: 1.8em; color: #00f2ff; text-shadow: 0 0 10px #00f2ff, 0 0 20px #0055ff; opacity: 1; }
         #tank-display-top { position: absolute; top: 5px; right: 15px; font-size: 5.5em; font-weight: 900; color: #0f0; z-index: 1001; line-height: 1; }
+        
         .palpitante { color: #f00 !important; animation: pulso 0.6s infinite; text-shadow: 0 0 20px #f00; }
         @keyframes pulso { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
         #calib-container { position: absolute; top: 10px; left: 10px; z-index: 1005; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 15px; border: 2px solid #0f0; width: 100px; text-align: center; }
         #calib-container span { font-size: 0.6em; color: #0f0; font-weight: bold; display: block; margin-bottom: 4px; }
         #litros-llegada { width: 80%; background: #000; color: #fff; border: 1px solid #0f0; font-size: 1.2em; text-align: center; border-radius: 5px; margin-bottom: 8px; }
         .btn-calib { background: #0f0; color: #000; border: none; padding: 5px; width: 100%; font-weight: bold; border-radius: 5px; font-size: 0.7em; cursor: pointer; }
+
         #map { height: 100vh; width: 100vw; z-index: 1; }
+
         .controls { position: absolute; bottom: 15px; left: 10px; right: 10px; background: rgba(0,0,0,0.95); padding: 12px; border-radius: 25px; z-index: 1000; border: 2px solid #0f0; }
         .box-indicadores { display: flex; justify-content: space-around; margin-bottom: 10px; }
         .reloj-btn { flex: 1; padding: 6px; border-radius: 15px; margin: 0 5px; text-align: center; background: rgba(255,255,255,0.05); }
@@ -26,27 +30,33 @@
         .txt-val { font-size: 0.8em; font-weight: bold; color: #fff; }
         .txt-money { font-size: 1.4em; font-weight: 900; display: block; margin: 2px 0; color: #fff; }
         .txt-gas { font-size: 0.85em; color: #0f0; font-weight: 900; }
+
         .btn-group { display: flex; gap: 10px; }
         button { width: 100%; padding: 16px; border: none; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
         .btn-start { background: #0f0; color: #000; }
         .btn-pause { background: #ffae00; color: #000; }
         .btn-extra { background: #00fbff; color: #000; }
         .btn-stop { background: #ff0000; color: #fff; margin-top: 10px; height: 45px; font-size: 0.9em; }
+
         #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 2000; display: none; padding: 15px; box-sizing: border-box; overflow-y: auto; }
         .card-informe { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: #fff; }
         #detalle-dia { background: #fff3cd; padding: 15px; border-radius: 15px; margin: 15px 0; border: 1px solid #ffeeba; font-size: 0.9em; line-height: 1.5; }
         .btn-semana { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .btn-semana button { padding: 12px; background: #eee; font-size: 0.8em; color: #000; border-radius: 12px; border: 1px solid #ccc; height: 50px; }
+        .base-label { background: #000; color: #0f0; border: 2px solid #0f0; border-radius: 5px; padding: 2px 5px; font-weight: 900; font-size: 0.7em; }
     </style>
 </head>
 <body>
+
     <div id="header"><h1>LUCY JHA</h1></div>
     <div id="tank-display-top">10.0</div>
+
     <div id="calib-container">
         <span>LLEGADA (L)</span>
         <input type="number" id="litros-llegada" step="0.1" value="0">
         <button class="btn-calib" onclick="calibrar()">CALIBRAR</button>
     </div>
+
     <div id="pantalla-informe">
         <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; border-radius: 12px; padding: 10px 25px;">⬅ VOLVER</button>
         <div class="card-informe" style="background: #28a745;">CORTE 7 DÍAS:<br><span id="c7-txt">0km | 0L | $0.00</span></div>
@@ -63,7 +73,9 @@
             <button onclick="verDia(this, 'Domingo')">DOM</button>
         </div>
     </div>
+
     <div id="map"></div>
+
     <div class="controls">
         <div class="box-indicadores">
             <div class="reloj-btn reloj-cliente">
@@ -79,10 +91,12 @@
                 <span class="txt-gas"><span id="e-gas">0.0</span> L</span>
             </div>
         </div>
+
         <div id="setup-area">
             <input type="range" id="fuel-slider" min="0" max="15" step="0.1" value="10" style="width:100%; accent-color:#0f0;">
             <button class="btn-start" style="margin-top:12px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
+
         <div id="run-area" style="display:none;">
             <div class="btn-group">
                 <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">PAUSA ⏳</button>
@@ -92,16 +106,21 @@
         </div>
         <button onclick="abrirInforme()" style="background:#fff; color:#000; margin-top:10px; height:45px; font-size:0.9em; border-radius:15px; font-weight:bold; border:2px solid #0f0;">HISTORIAL 📊</button>
     </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map = L.map('map').setView([10.17, -67.92], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#00f2ff', fillOpacity: 1, weight: 3}).addTo(map);
-        let tC = 0, tE = 0, timerC, timerE, dC = 0, dE = 0, fuelI = 10, fuelR = 10, enP = false, enE = false, calibrado = false;
-        let factor = 0, PRECIO = 0.50, ultimaPos = null, poly;
 
+        let tC = 0, tE = 0, timerC, timerE, dC = 0, dE = 0, fuelI = 10, fuelR = 10, enP = false, enE = false, calibrado = false;
+        let factor = 0, PRECIO = 0.50, ultimaPos = null, baseAnclada = false, poly;
+
+        // FÓRMULA HAVERSINE (DISTANCIA REAL)
         function getDist(p1, p2) {
-            let R = 6371; let dLat = (p2[0]-p1[0])*Math.PI/180; let dLon = (p2[1]-p1[1])*Math.PI/180;
+            let R = 6371; 
+            let dLat = (p2[0]-p1[0])*Math.PI/180;
+            let dLon = (p2[1]-p1[1])*Math.PI/180;
             let a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(p1[0]*Math.PI/180)*Math.cos(p2[0]*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
             return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
@@ -131,9 +150,13 @@
             timerE = setInterval(() => { if(enE) { tE++; document.getElementById('e-time').innerText = fmt(tE); } }, 1000);
             navigator.geolocation.watchPosition(pos => {
                 let ll = [pos.coords.latitude, pos.coords.longitude];
+                if(!baseAnclada) {
+                    L.marker(ll).addTo(map).bindTooltip("M. ANATO SMG ⚡", {permanent: true, className: 'base-label'}).openTooltip();
+                    baseAnclada = true;
+                }
                 if(ultimaPos) {
                     let d = getDist(ultimaPos, ll);
-                    if(d > 0.002) { // Solo si se mueve más de 2 metros
+                    if(d > 0.002) { // Filtro de 2 metros
                         if(!enP) { dC += d; poly.addLatLng(ll); }
                         if(enE) dE += d;
                         if(calibrado) fuelR -= (d * factor);
@@ -148,7 +171,7 @@
             if((dC+dE) > 0) {
                 factor = (fuelI - lleg) / (dC + dE);
                 calibrado = true; fuelR = lleg;
-                alert("Calibración exitosa."); actualizarUI();
+                alert("Calibración exitosa. ¡Lucy lista!"); actualizarUI();
             }
         }
 
@@ -156,7 +179,7 @@
         function pausarRuta() { 
             enP = !enP; document.getElementById('pause-btn').innerText = enP ? "REANUDAR" : "PAUSA ⏳"; 
             if(enP && ultimaPos) {
-                let n = prompt("Nombre del lugar / cliente?");
+                let n = prompt("¿Nombre del cliente/lugar?");
                 if(n) L.marker(ultimaPos).addTo(map).bindPopup("<b>Llegada:</b> " + n).openPopup();
             }
         }
@@ -171,7 +194,7 @@
         function finalizarRuta() { 
             let data = {km: (dC+dE).toFixed(2), gas: (fuelI-fuelR).toFixed(1)};
             localStorage.setItem('ultimo_viaje', JSON.stringify(data));
-            alert("Día finalizado y guardado."); location.reload(); 
+            alert("Día finalizado y registro guardado."); location.reload(); 
         }
     </script>
 </body>
