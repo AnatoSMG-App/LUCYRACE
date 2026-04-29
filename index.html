@@ -232,7 +232,6 @@ let baseDeDatosRutas = JSON.parse(localStorage.getItem('lucy_database') || "{}")
         grabando = false;
         alert("✅ Ruta guardada");
     }
-}
 
 function crearM(n, p, r) {
     let m = L.marker(p).addTo(map).bindTooltip(n, {permanent:true, className:'etiqueta-fija'});
