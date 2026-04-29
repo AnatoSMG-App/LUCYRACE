@@ -3,76 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUCY JH - Control de Ruta</title>
+    <title>LUCY JHA - Control Total</title>
     <style>
-        /* Estilos generales con toques neón */
-        body { background-color: #121212; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #1e1e1e; }
+        body { background-color: #0a0a0a; color: #e0e0e0; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        /* Cuadros Superiores */
-        .box { width: 80px; height: 50px; background: #2a2a2a; border: 2px solid #00ffcc; text-align: center; border-radius: 8px; }
-        .calib-box { border-color: #555; color: #888; transition: 0.3s; }
-        .active-calib { border-color: #00ffcc; color: white; }
+        /* Cabecera */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a1a; border-bottom: 1px solid #333; }
+        .box { width: 85px; height: 50px; background: #222; border: 2px solid #00ffcc; text-align: center; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .calib-box { border-color: #555; color: #555; cursor: pointer; transition: 0.3s; }
+        .litros-input { background: transparent; border: none; color: #00ffcc; font-size: 20px; width: 100%; text-align: center; font-weight: bold; outline: none; }
         
-        /* Centro: Mapa (Simulado) */
-        #mapa { flex-grow: 1; background: #222; display: flex; justify-content: center; align-items: center; border: 1px solid #333; margin: 5px; position: relative; }
-        
-        /* Alerta Roja */
-        .reserva { color: #ff3333 !important; border-color: #ff3333 !important; animation: parpadeo 1s infinite; }
-        @keyframes parpadeo { 50% { opacity: 0.5; } }
+        /* Centro: Mapa y GPS */
+        #mapa-container { flex-grow: 1; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; border: 1px solid #222; margin: 10px; border-radius: 15px; }
+        #status { font-size: 18px; margin-top: 10px; color: #00ffcc; }
 
-        /* Menú Inferior */
-        nav { display: flex; justify-content: space-around; padding: 15px; background: #1e1e1e; }
-        .btn-nav { background: #333; border: none; color: white; padding: 10px; border-radius: 5px; width: 30%; }
+        /* Alerta de Reserva */
+        .reserva { border-color: #ff3333 !important; color: #ff3333 !important; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* Menú Inferior Corregido */
+        nav { display: flex; justify-content: space-around; padding: 20px; background: #1a1a1a; border-top: 1px solid #333; }
+        .btn-nav { background: #333; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 30%; font-size: 14px; text-transform: uppercase; }
+        .btn-nav:active { background: #00ffcc; color: black; }
     </style>
 </head>
 <body>
 
     <header>
-        <div id="btnResta" class="box calib-box" onmousedown="iniciarPresion()" onmouseup="cancelarPresion()">-</div>
-        <h2 style="color: #00ffcc;">LUCY JH</h2>
-        <input type="number" id="tanque" class="box" placeholder="Litros" step="0.01">
+        <div id="btnCalibrar" class="box calib-box" onmousedown="startTimer()" onmouseup="stopTimer()">-</div>
+        <h2 style="color: #00ffcc; margin: 0;">LUCY JHA</h2>
+        <div class="box">
+            <input type="number" id="tanque" class="litros-input" value="10" onchange="checkReserva()">
+        </div>
     </header>
 
-    <div id="mapa">
-        <p id="statusGPS">Esperando GPS... 🛰️</p>
+    <div id="mapa-container">
+        <i class="fa-solid fa-satellite-dish" style="font-size: 40px; color: #333;"></i>
+        <div id="status">Esperando GPS... 🛰️</div>
+        <div style="font-size: 12px; color: #555; margin-top: 5px;">Rastreo de Alta Precisión Activo</div>
     </div>
 
     <nav>
         <button class="btn-nav">Tiempo ⏱️</button>
-        <button class="btn-nav">Distancia 📏</button>
-        <button class="btn-nav" onclick="abrirInforme()">Informe 📊</button>
+        <button class="btn-nav">KM 📏</button>
+        <button class="btn-nav" onclick="verInforme()">Informe 📊</button>
     </nav>
 
     <script>
         let timer;
-        let calibrado = false;
-
-        // Lógica del candado de 3 segundos
-        function iniciarPresion() {
+        
+        // Bloqueo de 3 segundos para calibración
+        function startTimer() {
             timer = setTimeout(() => {
-                const box = document.getElementById('btnResta');
-                box.classList.add('active-calib');
-                let valor = prompt("Introduce litros actuales para calibrar:");
-                if(valor) box.innerText = valor;
+                let actual = prompt("Calibración: ¿Cuántos litros quedan ahora?");
+                if(actual) {
+                    document.getElementById('btnCalibrar').innerText = actual;
+                    document.getElementById('btnCalibrar').style.borderColor = "#00ffcc";
+                    document.getElementById('btnCalibrar').style.color = "#fff";
+                }
             }, 3000);
         }
+        function stopTimer() { clearTimeout(timer); }
 
-        function cancelarPresion() { clearTimeout(timer); }
-
-        function abrirInforme() {
-            alert("Abriendo pantalla de Informes: 7, 15 y 30 días...");
+        // Alerta Roja de Reserva
+        function checkReserva() {
+            let litros = parseFloat(document.getElementById('tanque').value);
+            let input = document.getElementById('tanque');
+            if(litros < 2) {
+                input.parentElement.classList.add('reserva');
+                input.style.color = "#ff3333";
+            } else {
+                input.parentElement.classList.remove('reserva');
+                input.style.color = "#00ffcc";
+            }
         }
 
-        // Simulación de alerta roja
-        setInterval(() => {
-            let litros = parseFloat(document.getElementById('tanque').value);
-            if (litros < 2) {
-                document.getElementById('tanque').classList.add('reserva');
-            } else {
-                document.getElementById('tanque').classList.remove('reserva');
-            }
-        }, 1000);
+        function verInforme() {
+            alert("Accediendo a Reportes: 7, 15 y 30 días acumulados.");
+            // Aquí irá la lógica para abrir la subpantalla de reportes
+        }
     </script>
 </body>
 </html>
