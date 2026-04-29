@@ -3,35 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V5.5 PRO</title>
+    <title>LUCY JHA - V5.7 RECTIFICADA</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* MANTENGO TODO TU ESTILO ORIGINAL DE LAS FOTOS */
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
-        #header { position: absolute; top: 10px; width: 100%; display: flex; justify-content: center; z-index: 1000; pointer-events: none; }
-        #header h1 { margin: 0; font-size: 1.8em; color: #00f2ff; text-shadow: 0 0 10px #00f2ff; }
-        #tank-display-top { position: absolute; top: 5px; right: 15px; font-size: 4.5em; font-weight: 900; color: #0f0; z-index: 1001; }
+        #header { position: absolute; top: 12px; width: 100%; display: flex; justify-content: center; z-index: 1000; pointer-events: none; }
+        #header h1 { margin: 0; font-size: 1.5em; color: #00f2ff; text-shadow: 0 0 10px #00f2ff; }
+        #tank-display-top { position: absolute; top: 5px; right: 15px; font-size: 4em; font-weight: 900; color: #0f0; z-index: 1001; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
 
-        /* CONTROLES QUE VISTE EN TUS FOTOS */
-        .controls { position: absolute; bottom: 15px; left: 10px; right: 10px; background: rgba(0,0,0,0.9); padding: 12px; border-radius: 25px; z-index: 1000; border: 2px solid #0f0; }
-        .box-indicadores { display: flex; justify-content: space-around; margin-bottom: 10px; gap: 10px; }
-        .reloj-btn { flex: 1; padding: 8px; border-radius: 15px; text-align: center; border: 2px solid #555; }
+        .controls { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.95); padding: 12px; border-radius: 20px; z-index: 1000; border: 2px solid #0f0; }
+        .box-indicadores { display: flex; justify-content: space-around; margin-bottom: 10px; gap: 8px; }
+        .reloj-btn { flex: 1; padding: 10px; border-radius: 15px; text-align: center; border: 2px solid #555; background: rgba(255,255,255,0.05); }
         .reloj-cliente { border-color: #ffae00; color: #ffae00; }
         .reloj-extra { border-color: #ff00ea; color: #ff00ea; }
         
-        .txt-money { font-size: 1.4em; font-weight: 900; display: block; color: #fff; }
-        .btn-start { background: #0f0; color: #000; width: 100%; padding: 16px; border-radius: 18px; font-size: 1.2em; font-weight: bold; }
+        .txt-money { font-size: 1.3em; font-weight: 900; display: block; color: #fff; }
+        .btn-start { background: #0f0; color: #000; width: 100%; padding: 18px; border-radius: 15px; font-size: 1.3em; font-weight: bold; border: none; }
         
-        /* BOTONES DE ACCIÓN */
-        .btn-group { display: flex; gap: 8px; flex-direction: column; }
+        #run-area { display: none; flex-direction: column; gap: 8px; }
         .row-btns { display: flex; gap: 8px; }
-        .btn-pause { flex: 1; background: #ffae00; color: #000; padding: 12px; border-radius: 12px; font-weight: bold; }
-        .btn-extra-act { flex: 1; background: #ff00ea; color: #fff; padding: 12px; border-radius: 12px; font-weight: bold; border: 2px solid #fff; }
-        .btn-stop { background: #f00; color: #fff; padding: 10px; border-radius: 12px; font-weight: bold; margin-top: 5px; }
+        .btn-pause { flex: 1; background: #ffae00; color: #000; padding: 15px; border-radius: 12px; font-weight: bold; border: none; }
+        .btn-extra-act { flex: 1; background: #ff00ea; color: #fff; padding: 15px; border-radius: 12px; font-weight: bold; border: 2px solid #fff; }
+        .btn-historial { background: #fff; color: #000; width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; margin-top: 8px; border: 2px solid #0f0; }
+        .btn-stop { background: #f00; color: #fff; padding: 10px; border-radius: 12px; font-weight: bold; margin-top: 5px; border: none; }
 
-        /* ETIQUETAS FIJAS */
-        .base-label { background: #000 !important; color: #0f0 !important; border: 1.5px solid #0f0 !important; font-weight: bold !important; opacity: 1 !important; }
+        .etiqueta-fija { background: #000 !important; color: #0f0 !important; border: 2px solid #0f0 !important; font-weight: bold !important; opacity: 1 !important; }
     </style>
 </head>
 <body>
@@ -43,57 +40,57 @@
     <div class="controls">
         <div class="box-indicadores">
             <div class="reloj-btn reloj-cliente">
-                <span style="font-size:0.6em">RUTA CLIENTE</span>
+                <span style="font-size:0.6em; display:block">CLIENTE</span>
                 <span id="c-km" style="font-weight:bold">0.00</span> km
                 <span class="txt-money">$<span id="c-money">0.00</span></span>
-                <span id="c-gas" style="font-size:0.8em; color:#0f0">0.0L</span>
             </div>
             <div class="reloj-btn reloj-extra">
-                <span style="font-size:0.6em">MANDADO EXTRA</span>
+                <span style="font-size:0.6em; display:block">EXTRA</span>
                 <span id="e-km" style="font-weight:bold">0.00</span> km
                 <span class="txt-money">$<span id="e-money">0.00</span></span>
-                <span id="e-gas" style="font-size:0.8em; color:#0f0">0.0L</span>
             </div>
         </div>
 
         <div id="setup-area">
-            <input type="range" id="fuel-slider" min="0" max="15" step="0.1" value="10" style="width:100%; accent-color:#0f0; margin-bottom:10px;">
+            <input type="range" id="fuel-slider" min="0" max="15" step="0.1" value="10" style="width:100%; accent-color:#0f0; margin-bottom:12px;">
             <button class="btn-start" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
 
-        <div id="run-area" style="display:none;" class="btn-group">
+        <div id="run-area">
             <div class="row-btns">
-                <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">PAUSA / MARCAR 📍</button>
+                <button id="pause-btn" class="btn-pause" onclick="pausarYMarcar()">PAUSA / MARCAR 📍</button>
                 <button id="extra-btn" class="btn-extra-act" onclick="toggleExtra()">EXTRA: OFF 🚀</button>
             </div>
             <button class="btn-stop" onclick="location.reload()">TERMINAR DÍA 🏁</button>
         </div>
+        <button class="btn-historial" onclick="alert('Historial: ' + dC.toFixed(2) + 'km recorridos')">HISTORIAL 📊</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let map = L.map('map').setView([10.17, -67.92], 16);
+        let map = L.map('map', { zoomControl: false }).setView([10.17, -67.92], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        let markerUser = L.circleMarker([0,0], {radius: 7, color: '#00f2ff', fillColor: '#00f2ff', fillOpacity: 1}).addTo(map);
-        let poly = L.polyline([], {color: '#0f0', weight: 5}).addTo(map);
+        let markerUser = L.circleMarker([0,0], {radius: 8, color: '#00f2ff', fillColor: '#00f2ff', fillOpacity: 1}).addTo(map);
+        let poly = L.polyline([], {color: '#0f0', weight: 6}).addTo(map);
         
         let dC = 0, dE = 0, grabando = false, enExtra = false, enPausa = false, baseAnclada = false, ultimaPos = null;
         let fuelI = 10;
 
-        // GPS ACTIVO DESDE EL INICIO
+        // GPS SIEMPRE ACTIVO PARA EL ANCLA Y MOVIMIENTO
         navigator.geolocation.watchPosition(pos => {
             let latlng = [pos.coords.latitude, pos.coords.longitude];
             
             if(!baseAnclada) {
-                L.marker(latlng).addTo(map).bindTooltip("MI UBICACIÓN ⚡", {permanent: true, className: 'base-label'}).openTooltip();
-                map.setView(latlng, 17);
+                L.marker(latlng).addTo(map).bindTooltip("MI UBICACIÓN ⚡", { permanent: true, className: 'etiqueta-fija' }).openTooltip();
+                map.setView(latlng, 18);
                 baseAnclada = true;
             }
 
+            // LÓGICA DE MOVIMIENTO REAL
             if(grabando && !enPausa && ultimaPos) {
                 let d = getDist(ultimaPos, latlng);
-                if(d > 0.002) { // Si te mueves más de 2 metros reales
+                if(d > 0.001) { // Si te mueves más de 1 metro
                     if(enExtra) { dE += d; } else { dC += d; }
                     poly.addLatLng(latlng);
                     actualizarUI();
@@ -105,31 +102,33 @@
 
         function iniciarRuta() {
             grabando = true;
+            enPausa = false; // Aseguramos que NO empiece pausado
             fuelI = parseFloat(document.getElementById('fuel-slider').value);
             document.getElementById('setup-area').style.display = 'none';
-            document.getElementById('run-area').style.display = 'block';
+            document.getElementById('run-area').style.display = 'flex';
         }
 
         function toggleExtra() {
             enExtra = !enExtra;
-            document.getElementById('extra-btn').innerText = enExtra ? "EXTRA: ON 🔥" : "EXTRA: OFF 🚀";
-            document.getElementById('extra-btn').style.background = enExtra ? "#fff" : "#ff00ea";
-            document.getElementById('extra-btn').style.color = enExtra ? "#ff00ea" : "#fff";
+            let btn = document.getElementById('extra-btn');
+            btn.innerText = enExtra ? "EXTRA: ON 🔥" : "EXTRA: OFF 🚀";
+            btn.style.background = enExtra ? "#fff" : "#ff00ea";
+            btn.style.color = enExtra ? "#ff00ea" : "#fff";
         }
 
-        function pausarRuta() {
+        function pausarYMarcar() {
             enPausa = !enPausa;
             document.getElementById('pause-btn').innerText = enPausa ? "REANUDAR ▶️" : "PAUSA / MARCAR 📍";
             if(enPausa && ultimaPos) {
-                let n = prompt("¿Nombre del marcador?");
-                if(n) L.marker(ultimaPos).addTo(map).bindTooltip(n.toUpperCase(), {permanent: true, className: 'base-label'}).openTooltip();
+                let n = prompt("Nombre del sitio:");
+                if(n) L.marker(ultimaPos).addTo(map).bindTooltip(n.toUpperCase(), { permanent: true, className: 'etiqueta-fija' }).openTooltip();
             }
         }
 
         function actualizarUI() {
             document.getElementById('c-km').innerText = dC.toFixed(2);
             document.getElementById('e-km').innerText = dE.toFixed(2);
-            document.getElementById('tank-display-top').innerText = (fuelI - (dC + dE) * 0.05).toFixed(1); // Estimado hasta calibrar
+            document.getElementById('tank-display-top').innerText = (fuelI - (dC + dE) * 0.05).toFixed(1);
         }
 
         function getDist(p1, p2) {
