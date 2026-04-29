@@ -3,39 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - PROFESIONAL V2</title>
+    <title>LUCY JHA - V3.1 PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
-        #header { position: absolute; top: 10px; width: 100%; display: flex; justify-content: center; z-index: 1000; }
-        #header h1 { margin: 0; font-size: 1.4em; color: #0f0; text-shadow: 0 0 10px #0f0; }
-        #tank-display-top { position: absolute; top: 10px; right: 15px; font-size: 3.5em; font-weight: 900; color: #0f0; z-index: 1001; }
         
+        /* 1. CABECERA Y TANQUE GRANDE */
+        #header { position: absolute; top: 10px; width: 100%; display: flex; justify-content: center; z-index: 1000; }
+        #header h1 { margin: 0; font-size: 1.2em; color: #0f0; text-shadow: 0 0 10px #0f0; opacity: 0.7; }
+        #tank-display-top { position: absolute; top: 5px; right: 15px; font-size: 4.5em; font-weight: 900; color: #0f0; z-index: 1001; }
+        
+        .palpitante { color: #f00 !important; animation: pulso 0.8s infinite; }
+        @keyframes pulso { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* 2. CALIBRACIÓN (RECUPERADA) */
+        #calib-container { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 12px; border: 1px solid #0f0; width: 90px; text-align: center; }
+        #calib-container input { width: 70px; background: #000; color: #fff; border: 1px solid #0f0; font-size: 1.1em; text-align: center; margin-bottom: 5px; }
+
         #map { height: 100vh; width: 100vw; z-index: 1; }
 
-        .controls { position: absolute; bottom: 15px; left: 10px; right: 10px; background: rgba(0,0,0,0.95); padding: 15px; border-radius: 20px; z-index: 1000; border: 2px solid #0f0; }
-        
-        /* MINI CONTADORES FLOTANTES (Lo que pediste en el video) */
-        .floating-stats { display: flex; justify-content: space-around; margin-bottom: 10px; text-align: center; }
-        .stat-group { flex: 1; padding: 5px; border-radius: 10px; }
-        .stat-group.cliente { border: 1px solid #ffae00; margin-right: 5px; color: #ffae00; }
-        .stat-group.extra { border: 1px solid #ff00ea; margin-left: 5px; color: #ff00ea; }
-        .mini-label { font-size: 0.5em; font-weight: bold; text-transform: uppercase; display: block; }
-        .mini-val { font-size: 0.9em; font-weight: bold; }
-        .mini-money { font-size: 1.1em; display: block; color: #fff; }
+        /* 3. INDICADORES SOBRE BOTONES CON GASOLINA */
+        .controls { position: absolute; bottom: 15px; left: 10px; right: 10px; background: rgba(0,0,0,0.95); padding: 12px; border-radius: 20px; z-index: 1000; border: 2px solid #0f0; }
+        .box-indicadores { display: flex; justify-content: space-around; margin-bottom: 8px; }
+        .reloj-btn { flex: 1; padding: 5px; border-radius: 12px; margin: 0 4px; text-align: center; }
+        .reloj-cliente { border: 2px solid #ffae00; color: #ffae00; }
+        .reloj-extra { border: 2px solid #ff00ea; color: #ff00ea; }
+        .txt-mini { font-size: 0.5em; font-weight: bold; text-transform: uppercase; display: block; color: #fff; }
+        .txt-val { font-size: 0.75em; font-weight: bold; }
+        .txt-money { font-size: 1.1em; font-weight: 900; display: block; color: #fff; }
+        .txt-gas { font-size: 0.75em; color: #0f0; font-weight: bold; }
 
         .btn-group { display: flex; gap: 10px; }
-        button { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 1em; font-weight: bold; cursor: pointer; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 15px; font-size: 1em; font-weight: bold; cursor: pointer; }
         .btn-start { background: #0f0; color: #000; }
         .btn-pause { background: #ffae00; color: #000; }
         .btn-extra { background: #00fbff; color: #000; }
-        .btn-stop { background: #ff0000; color: #fff; margin-top: 10px; height: 45px; padding: 0; }
+        .btn-stop { background: #ff0000; color: #fff; margin-top: 8px; height: 40px; font-size: 0.8em; }
 
-        /* HISTORIAL RECUPERADO */
+        /* 4. HISTORIAL COMPLETO */
         #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 2000; display: none; padding: 15px; box-sizing: border-box; overflow-y: auto; }
-        .corte-card { padding: 12px; border-radius: 12px; margin-bottom: 10px; color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-dias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
-        .btn-dias button { padding: 10px; background: #f0f0f0; font-size: 0.75em; color: #000; border-radius: 10px; border: 1px solid #ddd; }
+        .card-informe { padding: 12px; border-radius: 12px; margin-bottom: 8px; color: #fff; font-size: 0.85em; }
+        .btn-semana { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+        .btn-semana button { padding: 8px; background: #eee; font-size: 0.7em; color: #000; border-radius: 8px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
@@ -43,14 +52,21 @@
     <div id="header"><h1>LUCY JHA</h1></div>
     <div id="tank-display-top">10.0</div>
 
+    <div id="calib-container">
+        <span style="font-size: 0.5em; color:#0f0;">LLEGADA (L)</span>
+        <input type="number" id="litros-llegada" step="0.1" value="0">
+        <button onclick="calibrar()" style="background:#0f0; padding:4px; font-size:0.6em; border-radius:5px;">CALIBRAR</button>
+    </div>
+
     <div id="pantalla-informe">
-        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; margin-bottom: 15px; border-radius: 10px;">⬅ VOLVER</button>
-        <div class="corte-card" style="background: #28a745;"><b>7 DÍAS (SEMANAL):</b><br><span id="c7-txt">0.0 km | $0.00</span></div>
-        <div class="corte-card" style="background: #17a2b8;"><b>15 DÍAS (QUINCENAL):</b><br><span id="c15-txt">0.0 km | $0.00</span></div>
+        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; margin-bottom: 10px;">⬅ VOLVER</button>
+        <div class="card-informe" style="background: #28a745;"><b>7 DÍAS:</b> <span id="c7-txt">0km | 0L | $0.00</span></div>
+        <div class="card-informe" style="background: #17a2b8;"><b>15 DÍAS:</b> <span id="c15-txt">0km | 0L | $0.00</span></div>
+        <div class="card-informe" style="background: #6f42c1;"><b>30 DÍAS:</b> <span id="c30-txt">0km | 0L | $0.00</span></div>
         
-        <div id="detalle-dia" style="background:#fff3cd; padding:12px; border-radius:12px; font-size:0.9em; margin: 10px 0; border: 1px solid #ffeeba;">Toca un día para ver detalle:</div>
+        <div id="detalle-dia" style="background:#fff3cd; padding:12px; border-radius:12px; font-size:0.8em; margin: 10px 0; border: 1px solid #ffeeba;">Toca un día:</div>
         
-        <div class="btn-dias">
+        <div class="btn-semana">
             <button onclick="verDia(this, 'Lunes')">LUN</button>
             <button onclick="verDia(this, 'Martes')">MAR</button>
             <button onclick="verDia(this, 'Miércoles')">MIE</button>
@@ -64,22 +80,24 @@
     <div id="map"></div>
 
     <div class="controls">
-        <div class="floating-stats">
-            <div class="stat-group cliente">
-                <span class="mini-label">Ruta Cliente</span>
-                <span class="mini-val"><span id="c-time">00:00</span> | <span id="c-km">0.0</span>km</span>
-                <span class="mini-money">$<span id="c-money">0.00</span></span>
+        <div class="box-indicadores">
+            <div class="reloj-btn reloj-cliente">
+                <span class="txt-mini">Ruta Cliente</span>
+                <span class="txt-val"><span id="c-time">00:00</span> | <span id="c-km">0.0</span>km</span>
+                <span class="txt-money">$<span id="c-money">0.00</span></span>
+                <span class="txt-gas"><span id="c-gas">0.0</span> L</span>
             </div>
-            <div class="stat-group extra">
-                <span class="mini-label">Mandado Extra</span>
-                <span class="mini-val"><span id="e-time">00:00</span> | <span id="e-km">0.0</span>km</span>
-                <span class="mini-money">$<span id="e-money">0.00</span></span>
+            <div class="reloj-btn reloj-extra">
+                <span class="txt-mini">Mandado Extra</span>
+                <span class="txt-val"><span id="e-time">00:00</span> | <span id="e-km">0.0</span>km</span>
+                <span class="txt-money">$<span id="e-money">0.00</span></span>
+                <span class="txt-gas"><span id="e-gas">0.0</span> L</span>
             </div>
         </div>
 
         <div id="setup-area">
-            <input type="range" id="fuel-slider" min="0" max="15" step="0.5" value="10" style="width:100%; accent-color:#0f0;">
-            <button class="btn-start" style="margin-top:10px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
+            <input type="range" id="fuel-slider" min="0" max="15" step="0.5" value="10" style="width:100%;">
+            <button class="btn-start" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
 
         <div id="run-area" style="display:none;">
@@ -89,37 +107,45 @@
             </div>
             <button class="btn-stop" onclick="finalizarRuta()">TERMINAR DÍA 🏁</button>
         </div>
-        
-        <button onclick="abrirInforme()" style="background:#fff; color:#000; margin-top:10px; height:45px; border:2px solid #0f0; border-radius:12px; font-weight:bold;">VER HISTORIAL 📊</button>
+        <button onclick="abrirInforme()" style="background:#fff; color:#000; margin-top:8px; height:40px; font-size:0.8em; border-radius:10px;">HISTORIAL 📊</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map = L.map('map').setView([10.17, -67.92], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-        let path = L.polyline([], {color: '#00fbff', weight: 5}).addTo(map);
         let marker = L.circleMarker([0,0], {radius: 6, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        let segsC = 0, segsE = 0, timer, lastPos = null;
-        let dRuta = 0, dExtra = 0, fuelI = 10, fuelR = 10, enP = false, enE = false;
+        let tC = 0, tE = 0, timer;
+        let dC = 0, dE = 0, fuelI = 10, fuelR = 10, enP = false, enE = false;
         let factor = 0.05; const PRECIO = 0.50;
 
         document.getElementById('fuel-slider').oninput = function() { fuelI = fuelR = parseFloat(this.value); actualizarUI(); };
 
         function actualizarUI() {
-            document.getElementById('tank-display-top').innerText = fuelR.toFixed(1);
-            // Actualizar Cliente
-            document.getElementById('c-km').innerText = dRuta.toFixed(1);
-            document.getElementById('c-money').innerText = (dRuta * factor * PRECIO).toFixed(2);
-            // Actualizar Extra
-            document.getElementById('e-km').innerText = dExtra.toFixed(1);
-            document.getElementById('e-money').innerText = (dExtra * factor * PRECIO).toFixed(2);
+            let display = document.getElementById('tank-display-top');
+            display.innerText = fuelR.toFixed(1);
+            if(fuelR <= 4.0) display.classList.add('palpitante'); else display.classList.remove('palpitante');
+
+            // Cliente
+            let gasC = dC * factor;
+            document.getElementById('c-km').innerText = dC.toFixed(1);
+            document.getElementById('c-money').innerText = (gasC * PRECIO).toFixed(2);
+            document.getElementById('c-gas').innerText = gasC.toFixed(1);
+
+            // Extra
+            let gasE = dE * factor;
+            document.getElementById('e-km').innerText = dE.toFixed(1);
+            document.getElementById('e-money').innerText = (gasE * PRECIO).toFixed(2);
+            document.getElementById('e-gas').innerText = gasE.toFixed(1);
             
-            // Totales para tarjetas de informe
-            let totalKm = dRuta + dExtra;
-            let totalUsd = (totalKm * factor * PRECIO).toFixed(2);
-            document.getElementById('c7-txt').innerText = `${totalKm.toFixed(1)} km | $${totalUsd}`;
-            document.getElementById('c15-txt').innerText = `${totalKm.toFixed(1)} km | $${totalUsd}`;
+            // Informe
+            let totalKm = dC + dE;
+            let totalGas = totalKm * factor;
+            let res = `${totalKm.toFixed(1)}km | ${totalGas.toFixed(1)}L | $${(totalGas * PRECIO).toFixed(2)}`;
+            document.getElementById('c7-txt').innerText = res;
+            document.getElementById('c15-txt').innerText = res;
+            document.getElementById('c30-txt').innerText = res;
         }
 
         function iniciarRuta() {
@@ -127,24 +153,26 @@
             document.getElementById('run-area').style.display = 'block';
             timer = setInterval(() => {
                 if(!enP) {
-                    if(!enE) { segsC++; document.getElementById('c-time').innerText = fmt(segsC); }
-                    else { segsE++; document.getElementById('e-time').innerText = fmt(segsE); }
+                    if(!enE) { tC++; document.getElementById('c-time').innerText = fmt(tC); }
+                    else { tE++; document.getElementById('e-time').innerText = fmt(tE); }
                 }
             }, 1000);
-
             navigator.geolocation.watchPosition(pos => {
                 if(enP) return;
-                if(lastPos) {
-                    let d = 0.03; // Simulación de avance
-                    fuelR -= (d * factor);
-                    if(!enE) dRuta += d; else dExtra += d;
-                    actualizarUI();
-                }
-                lastPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
-                marker.setLatLng([lastPos.lat, lastPos.lon]);
-                path.addLatLng([lastPos.lat, lastPos.lon]);
-                map.panTo([lastPos.lat, lastPos.lon]);
+                let d = 0.02; fuelR -= (d * factor);
+                if(!enE) dC += d; else dE += d;
+                actualizarUI();
+                marker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
+                map.panTo([pos.coords.latitude, pos.coords.longitude]);
             }, null, {enableHighAccuracy: true});
+        }
+
+        function calibrar() {
+            let llegada = parseFloat(document.getElementById('litros-llegada').value);
+            if(dC+dE > 0) {
+                factor = (fuelI - llegada) / (dC + dE);
+                alert("Factor calibrado a: " + factor.toFixed(4));
+            }
         }
 
         function activarExtra() {
@@ -159,11 +187,12 @@
         function cerrarInforme() { document.getElementById('pantalla-informe').style.display = 'none'; }
         
         function verDia(btn, dia) {
-            document.querySelectorAll('.btn-dias button').forEach(b => b.style.background = '#f0f0f0');
+            document.querySelectorAll('.btn-semana button').forEach(b => b.style.background = '#eee');
             btn.style.background = '#0f0';
-            document.getElementById('detalle-dia').innerHTML = `<b>RESUMEN ${dia.toUpperCase()}:</b><br>🏠 Ruta Cliente: ${dRuta.toFixed(1)}km ($${(dRuta*factor*PRECIO).toFixed(2)})<br>🚀 Mandado Extra: ${dExtra.toFixed(1)}km ($${(dExtra*factor*PRECIO).toFixed(2)})<br>⛽ Gastado: ${(fuelI-fuelR).toFixed(1)} Litros`;
+            let gasC = dC * factor; let gasE = dE * factor;
+            document.getElementById('detalle-dia').innerHTML = `<b>${dia.toUpperCase()}</b><br>🏠 Cliente: ${dC.toFixed(1)}km | ${gasC.toFixed(1)}L | $${(gasC*PRECIO).toFixed(2)}<br>🚀 Extra: ${dE.toFixed(1)}km | ${gasE.toFixed(1)}L | $${(gasE*PRECIO).toFixed(2)}`;
         }
-        function finalizarRuta() { alert("Día terminado. ¡Buen trabajo!"); location.reload(); }
+        function finalizarRuta() { alert("Día terminado. ¡A descansar, amo!"); location.reload(); }
     </script>
 </body>
 </html>
