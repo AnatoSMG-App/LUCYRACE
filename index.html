@@ -3,34 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V3.4 PRO</title>
+    <title>LUCY JHA - V3.5 GOLD</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         
-        /* CABECERA Y TANQUE */
-        #tank-display-top { position: absolute; top: 5px; right: 15px; font-size: 4.5em; font-weight: 900; color: #0f0; z-index: 1001; }
-        .palpitante { color: #f00 !important; animation: pulso 0.8s infinite; }
-        @keyframes pulso { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        /* 1. TANQUE GRANDE Y NEÓN */
+        #tank-display-top { position: absolute; top: 0px; right: 15px; font-size: 5.5em; font-weight: 900; color: #0f0; z-index: 1001; text-shadow: 0 0 15px rgba(0,255,0,0.5); }
+        .palpitante { color: #f00 !important; animation: pulso 0.8s infinite; text-shadow: 0 0 20px #f00; }
+        @keyframes pulso { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        /* CONTROLES SUPERIORES */
+        /* 2. CONTROLES SUPERIORES (NOMBRE INVISIBLE) */
         #top-left-controls { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 5px; }
-        .mini-card { background: rgba(0,0,0,0.85); padding: 8px; border-radius: 12px; border: 1px solid #0f0; width: 115px; }
-        #input-nombre-cliente { display: none; } /* INVISIBLE POR DEFECTO */
-        input { width: 100%; background: #222; color: #fff; border: 1px solid #0f0; border-radius: 5px; padding: 4px; box-sizing: border-box; }
+        .mini-card { background: rgba(0,0,0,0.85); padding: 8px; border-radius: 12px; border: 1px solid #0f0; width: 120px; }
+        #box-nombre-cliente { display: none; border-color: #ffae00; } /* Invisible hasta la pausa */
+        input { width: 100%; background: #111; color: #fff; border: 1px solid #0f0; border-radius: 5px; padding: 5px; box-sizing: border-box; font-size: 0.9em; }
 
         #map { height: 100vh; width: 100vw; z-index: 1; }
 
-        /* CONTROLES INFERIORES */
+        /* 3. BOTONES Y REPORTES */
         .controls { position: absolute; bottom: 15px; left: 10px; right: 10px; background: rgba(0,0,0,0.95); padding: 12px; border-radius: 20px; z-index: 1000; border: 2px solid #0f0; }
         .box-indicadores { display: flex; justify-content: space-around; margin-bottom: 8px; }
         .reloj-btn { flex: 1; padding: 6px; border-radius: 12px; margin: 0 4px; text-align: center; border: 2px solid transparent; }
         .reloj-cliente { border-color: #ffae00; color: #ffae00; }
         .reloj-extra { border-color: #ff00ea; color: #ff00ea; }
         
-        .txt-val { font-size: 0.8em; font-weight: bold; color: #fff; display: block; }
-        .txt-money { font-size: 1.1em; font-weight: 900; display: block; color: #fff; }
-        .txt-gas { font-size: 0.75em; color: #0f0; font-weight: bold; }
+        .txt-val { font-size: 0.85em; font-weight: bold; color: #fff; display: block; }
+        .txt-money { font-size: 1.3em; font-weight: 900; display: block; color: #fff; }
+        .txt-gas { font-size: 0.8em; color: #0f0; font-weight: bold; }
 
         .btn-group { display: flex; gap: 10px; }
         button { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 1em; font-weight: bold; cursor: pointer; }
@@ -38,9 +38,9 @@
         .btn-pause { background: #ffae00; color: #000; }
         .btn-extra { background: #00fbff; color: #000; }
 
-        /* PANTALLA INFORME RECUPERADA */
-        #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 2000; display: none; padding: 15px; box-sizing: border-box; overflow-y: auto; }
-        .card-total { padding: 10px; border-radius: 10px; margin-bottom: 5px; color: #fff; font-size: 0.8em; font-weight: bold; }
+        /* HISTORIAL */
+        #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 2000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .card-h { padding: 12px; border-radius: 12px; margin-bottom: 8px; color: #fff; font-weight: bold; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -48,43 +48,43 @@
     <div id="tank-display-top">10.0</div>
 
     <div id="top-left-controls">
-        <div class="mini-card" id="input-nombre-cliente">
-            <span style="font-size: 0.55em; color:#0f0;">NOMBRE CLIENTE</span>
-            <input type="text" id="nombre-txt" placeholder="¿Quién es?">
+        <div class="mini-card" id="box-nombre-cliente">
+            <span style="font-size: 0.5em; color:#ffae00; font-weight: bold;">LLEGADA A:</span>
+            <input type="text" id="nombre-txt" placeholder="Ej: Gabriel M.">
         </div>
         <div class="mini-card">
-            <span style="font-size: 0.55em; color:#0f0;">LLEGADA (L)</span>
+            <span style="font-size: 0.5em; color:#0f0;">CALIBRAR (L)</span>
             <input type="number" id="litros-llegada" step="0.1" value="0">
-            <button onclick="calibrar()" style="background:#0f0; width:100%; margin-top:3px; font-size:0.6em; border-radius:4px; padding:2px;">CALIBRAR</button>
+            <button onclick="calibrar()" style="background:#0f0; width:100%; margin-top:4px; font-size:0.6em; border-radius:4px; padding:3px; font-weight:bold;">OK</button>
         </div>
     </div>
 
     <div id="map"></div>
 
     <div id="pantalla-informe">
-        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; margin-bottom: 10px; padding: 10px;">⬅ VOLVER</button>
-        <div class="card-total" style="background: #28a745;">7 DÍAS: <span id="r7">0km | 0L | $0</span></div>
-        <div class="card-total" style="background: #17a2b8;">15 DÍAS: <span id="r15">0km | 0L | $0</span></div>
-        <div class="card-total" style="background: #6f42c1;">30 DÍAS: <span id="r30">0km | 0L | $0</span></div>
-        <div id="detalle-desplegable" style="background:#fff3cd; padding:10px; margin-top:10px; border-radius:10px; font-size:0.85em; border:1px solid #ccc;">Toca un día para ver el detalle...</div>
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:5px; margin-top:10px;">
-            <button onclick="verDia('Lunes')" style="background:#eee; font-size:0.7em; padding:10px; border-radius:5px; border:1px solid #ccc; color:#000;">LUN</button>
-            <button onclick="verDia('Martes')" style="background:#eee; font-size:0.7em; padding:10px; border-radius:5px; border:1px solid #ccc; color:#000;">MAR</button>
-            <button onclick="verDia('Miércoles')" style="background:#eee; font-size:0.7em; padding:10px; border-radius:5px; border:1px solid #ccc; color:#000;">MIE</button>
-            <button onclick="verDia('Jueves')" style="background:#eee; font-size:0.7em; padding:10px; border-radius:5px; border:1px solid #ccc; color:#000;">JUE</button>
+        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; margin-bottom: 15px; padding: 10px 25px; border-radius: 10px;">⬅ VOLVER</button>
+        <div class="card-h" style="background: #28a745;">7 DÍAS: <span id="r7">0km | 0L | $0</span></div>
+        <div class="card-h" style="background: #17a2b8;">15 DÍAS: <span id="r15">0km | 0L | $0</span></div>
+        <div class="card-h" style="background: #6f42c1;">30 DÍAS: <span id="r30">0km | 0L | $0</span></div>
+        <div id="detalle-dia" style="background:#f8f9fa; padding:15px; border: 1px solid #ddd; border-radius:12px; margin: 15px 0; font-size: 0.9em;">Selecciona un día para ver el desglose.</div>
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;">
+            <button onclick="verDia('Lunes')" style="background:#eee; color:#000; border:1px solid #ccc; font-size:0.7em; padding:10px;">LUN</button>
+            <button onclick="verDia('Martes')" style="background:#eee; color:#000; border:1px solid #ccc; font-size:0.7em; padding:10px;">MAR</button>
+            <button onclick="verDia('Miércoles')" style="background:#eee; color:#000; border:1px solid #ccc; font-size:0.7em; padding:10px;">MIE</button>
+            <button onclick="verDia('Jueves')" style="background:#eee; color:#000; border:1px solid #ccc; font-size:0.7em; padding:10px;">JUE</button>
         </div>
     </div>
 
     <div class="controls">
         <div class="box-indicadores">
             <div class="reloj-btn reloj-cliente">
-                <span style="font-size:0.5em;">CLIENTE</span>
+                <span style="font-size:0.5em; font-weight:900;">RUTA CLIENTE</span>
                 <span class="txt-val"><span id="c-time">00:00</span> | <span id="c-km">0.0</span>km</span>
                 <span class="txt-money">$<span id="c-money">0.00</span></span>
                 <span class="txt-gas"><span id="c-gas">0.0</span> L</span>
             </div>
             <div class="reloj-btn reloj-extra">
-                <span style="font-size:0.5em;">EXTRA</span>
+                <span style="font-size:0.5em; font-weight:900;">MANDADO EXTRA</span>
                 <span class="txt-val"><span id="e-time">00:00</span> | <span id="e-km">0.0</span>km</span>
                 <span class="txt-money">$<span id="e-money">0.00</span></span>
                 <span class="txt-gas"><span id="e-gas">0.0</span> L</span>
@@ -93,7 +93,7 @@
 
         <div id="setup-area">
             <input type="range" id="fuel-slider" min="0" max="15" step="0.5" value="10" style="width:100%;">
-            <button class="btn-start" onclick="iniciarTodo()">¡A RODAR! 🏍️</button>
+            <button class="btn-start" onclick="iniciarTodo()" style="margin-top:10px;">¡A RODAR! 🏍️</button>
         </div>
 
         <div id="run-area" style="display:none;">
@@ -101,7 +101,7 @@
                 <button id="pause-btn" class="btn-pause" onclick="controlCliente()">PAUSA ⏳</button>
                 <button id="extra-btn" class="btn-extra" onclick="controlExtra()">EXTRA OFF 🚀</button>
             </div>
-            <button style="background:#fff; color:#000; border:2px solid #0f0; margin-top:8px; height:40px;" onclick="abrirInforme()">VER HISTORIAL 📊</button>
+            <button style="background:#fff; color:#000; border:2px solid #0f0; margin-top:10px; font-weight:bold; height:45px;" onclick="abrirInforme()">VER HISTORIAL 📊</button>
         </div>
     </div>
 
@@ -149,15 +149,14 @@
         function controlCliente() {
             isPausadoC = !isPausadoC;
             let btn = document.getElementById('pause-btn');
-            let inputDiv = document.getElementById('input-nombre-cliente');
-            
+            let boxNombre = document.getElementById('box-nombre-cliente');
             if(isPausadoC) {
                 btn.innerText = "REANUDAR";
-                inputDiv.style.display = "block"; // APARECE AL PAUSAR
+                boxNombre.style.display = "block"; // APARECE SOLO EN PAUSA
                 L.marker(lastPos).addTo(map).bindPopup("Punto B: " + (document.getElementById('nombre-txt').value || "Cliente")).openPopup();
             } else {
                 btn.innerText = "PAUSA ⏳";
-                inputDiv.style.display = "none"; // DESAPARECE AL REANUDAR
+                boxNombre.style.display = "none"; // DESAPARECE AL REANUDAR
             }
         }
 
@@ -171,11 +170,9 @@
         function abrirInforme() { document.getElementById('pantalla-informe').style.display = "block"; }
         function cerrarInforme() { document.getElementById('pantalla-informe').style.display = "none"; }
         function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); }
-        function calibrar() { alert("Calibrado!"); }
-        
+        function calibrar() { alert("Factor ajustado."); }
         function verDia(dia) {
-            let totalKm = distC + distE;
-            document.getElementById('detalle-desplegable').innerHTML = `<b>${dia.toUpperCase()}</b><br>🏠 Cliente: ${distC.toFixed(1)}km | $${(distC*factor*0.5).toFixed(2)}<br>🚀 Extra: ${distE.toFixed(1)}km | $${(distE*factor*0.5).toFixed(2)}<br>🏁 Total: ${totalKm.toFixed(1)}km`;
+            document.getElementById('detalle-dia').innerHTML = `<b>${dia.toUpperCase()}</b><br>🏠 Cliente: ${distC.toFixed(1)}km | $${(distC*factor*0.5).toFixed(2)}<br>🚀 Extra: ${distE.toFixed(1)}km | $${(distE*factor*0.5).toFixed(2)}`;
         }
     </script>
 </body>
