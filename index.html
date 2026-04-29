@@ -2,85 +2,133 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUCY JHA - Control Total</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LucyRace - Control Total</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { background-color: #0a0a0a; color: #e0e0e0; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
+        #header { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 1000; }
+        #header h1 { margin: 0; font-size: 2em; color: #0f0; text-shadow: 0 0 10px #0f0; letter-spacing: 5px; }
         
-        /* Cabecera */
-        header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a1a; border-bottom: 1px solid #333; }
-        .box { width: 85px; height: 50px; background: #222; border: 2px solid #00ffcc; text-align: center; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .calib-box { border-color: #555; color: #555; cursor: pointer; transition: 0.3s; }
-        .litros-input { background: transparent; border: none; color: #00ffcc; font-size: 20px; width: 100%; text-align: center; font-weight: bold; outline: none; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        /* Centro: Mapa y GPS */
-        #mapa-container { flex-grow: 1; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; border: 1px solid #222; margin: 10px; border-radius: 15px; }
-        #status { font-size: 18px; margin-top: 10px; color: #00ffcc; }
+        .controls { 
+            position: absolute; bottom: 30px; left: 15px; right: 15px; 
+            background: rgba(0,0,0,0.9); padding: 20px; border-radius: 20px;
+            z-index: 1000; border: 3px solid #0f0; box-shadow: 0 0 20px #0f0;
+        }
 
-        /* Alerta de Reserva */
-        .reserva { border-color: #ff3333 !important; color: #ff3333 !important; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 0.7em; color: #0f0; font-weight: bold; display: block; }
+        .stat-val { font-size: 1.2em; font-weight: bold; }
 
-        /* Menú Inferior Corregido */
-        nav { display: flex; justify-content: space-around; padding: 20px; background: #1a1a1a; border-top: 1px solid #333; }
-        .btn-nav { background: #333; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 30%; font-size: 14px; text-transform: uppercase; }
-        .btn-nav:active { background: #00ffcc; color: black; }
+        button { width: 100%; padding: 18px; border: none; border-radius: 12px; font-size: 1.2em; font-weight: bold; cursor: pointer; }
+        .btn-start { background: #0f0; color: #000; }
+        .btn-pause { background: #ffae00; color: #000; display: none; margin-bottom: 10px; }
+        .btn-stop { background: #ff0000; color: #fff; display: none; }
+        
+        #fuel-slider { width: 100%; margin-top: 10px; accent-color: #0f0; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div id="btnCalibrar" class="box calib-box" onmousedown="startTimer()" onmouseup="stopTimer()">-</div>
-        <h2 style="color: #00ffcc; margin: 0;">LUCY JHA</h2>
-        <div class="box">
-            <input type="number" id="tanque" class="litros-input" value="10" onchange="checkReserva()">
-        </div>
-    </header>
+    <div id="header"><h1>LUCY</h1></div>
+    <div id="map"></div>
 
-    <div id="mapa-container">
-        <i class="fa-solid fa-satellite-dish" style="font-size: 40px; color: #333;"></i>
-        <div id="status">Esperando GPS... 🛰️</div>
-        <div style="font-size: 12px; color: #555; margin-top: 5px;">Rastreo de Alta Precisión Activo</div>
+    <div class="controls">
+        <div class="stats">
+            <div class="stat-box"><span class="stat-label">TIEMPO</span><span id="time">00:00</span></div>
+            <div class="stat-box"><span class="stat-label">DISTANCIA</span><span id="dist">0.00 km</span></div>
+            <div class="stat-box"><span class="stat-label">TANQUE</span><span id="fuel" style="color: #0f0;">-- L</span></div>
+        </div>
+
+        <div id="setup-area">
+            <label style="display:block; text-align:center;">Litros iniciales: <span id="fuel-val">10</span>L</label>
+            <input type="range" id="fuel-slider" min="1" max="20" value="10">
+            <button class="btn-start" style="margin-top:15px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
+        </div>
+
+        <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">EN ESPERA / PAUSA ⏳</button>
+        <button id="stop-btn" class="btn-stop" onclick="finalizarRuta()">TERMINAR RUTA 🏁</button>
     </div>
 
-    <nav>
-        <button class="btn-nav">Tiempo ⏱️</button>
-        <button class="btn-nav">KM 📏</button>
-        <button class="btn-nav" onclick="verInforme()">Informe 📊</button>
-    </nav>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let timer;
+        let map = L.map('map').setView([10.17, -67.92], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        // Bloqueo de 3 segundos para calibración
-        function startTimer() {
-            timer = setTimeout(() => {
-                let actual = prompt("Calibración: ¿Cuántos litros quedan ahora?");
-                if(actual) {
-                    document.getElementById('btnCalibrar').innerText = actual;
-                    document.getElementById('btnCalibrar').style.borderColor = "#00ffcc";
-                    document.getElementById('btnCalibrar').style.color = "#fff";
-                }
-            }, 3000);
-        }
-        function stopTimer() { clearTimeout(timer); }
+        let path = L.polyline([], {color: '#0f0', weight: 6}).addTo(map);
+        let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        // Alerta Roja de Reserva
-        function checkReserva() {
-            let litros = parseFloat(document.getElementById('tanque').value);
-            let input = document.getElementById('tanque');
-            if(litros < 2) {
-                input.parentElement.classList.add('reserva');
-                input.style.color = "#ff3333";
-            } else {
-                input.parentElement.classList.remove('reserva');
-                input.style.color = "#00ffcc";
+        let segs = 0, timer, watchID, lastPos = null, totalDist = 0;
+        let fuelRestante = 10, fuelConsumoPorKm = 0.05; // Ajusta este valor según tu moto
+        let enPausa = false;
+
+        document.getElementById('fuel-slider').oninput = function() {
+            fuelRestante = parseFloat(this.value);
+            document.getElementById('fuel-val').innerText = this.value;
+            document.getElementById('fuel').innerText = this.value + " L";
+        };
+
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            let R = 6371; 
+            let dLat = (lat2-lat1) * Math.PI / 180;
+            let dLon = (lon2-lon1) * Math.PI / 180;
+            let a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function iniciarRuta() {
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'block';
+            document.getElementById('stop-btn').style.display = 'block';
+            
+            timer = setInterval(() => {
+                if(!enPausa) {
+                    segs++;
+                    let m = Math.floor(segs/60).toString().padStart(2,'0');
+                    let s = (segs%60).toString().padStart(2,'0');
+                    document.getElementById('time').innerText = `${m}:${s}`;
+                }
+            }, 1000);
+
+            if(navigator.geolocation) {
+                watchID = navigator.geolocation.watchPosition(pos => {
+                    if(enPausa) return;
+                    let lat = pos.coords.latitude;
+                    let lon = pos.coords.longitude;
+                    
+                    if(lastPos) {
+                        let d = calcularDistancia(lastPos.lat, lastPos.lon, lat, lon);
+                        totalDist += d;
+                        fuelRestante -= (d * fuelConsumoPorKm);
+                        document.getElementById('dist').innerText = totalDist.toFixed(2) + " km";
+                        document.getElementById('fuel').innerText = Math.max(0, fuelRestante).toFixed(2) + " L";
+                    }
+                    
+                    lastPos = {lat, lon};
+                    marker.setLatLng([lat, lon]);
+                    path.addLatLng([lat, lon]);
+                    map.panTo([lat, lon]);
+                }, null, {enableHighAccuracy: true});
             }
         }
 
-        function verInforme() {
-            alert("Accediendo a Reportes: 7, 15 y 30 días acumulados.");
-            // Aquí irá la lógica para abrir la subpantalla de reportes
+        function pausarRuta() {
+            enPausa = !enPausa;
+            let btn = document.getElementById('pause-btn');
+            btn.innerText = enPausa ? "REANUDAR RUTA ▶️" : "EN ESPERA / PAUSA ⏳";
+            btn.style.background = enPausa ? "#0f0" : "#ffae00";
+        }
+
+        function finalizarRuta() {
+            clearInterval(timer);
+            navigator.geolocation.clearWatch(watchID);
+            let resumen = `--- INFORME LUCY ---\nTiempo: ${document.getElementById('time').innerText}\nDistancia: ${totalDist.toFixed(2)} km\nCombustible Final: ${fuelRestante.toFixed(2)} L`;
+            alert(resumen);
+            location.reload(); 
         }
     </script>
 </body>
