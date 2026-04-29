@@ -1,99 +1,87 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - Salida 1</title>
-    <style>
-        /* Ajuste para evitar scroll y vista vertical */
-        * { box-sizing: border-box; touch-action: manipulation; }
-        body { 
-            background-color: #000; color: #fff; font-family: sans-serif; 
-            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
-        }
+<style>
+    /* Estilos para la nueva cabecera triple */
+    #header-container {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        z-index: 1000;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+    }
 
-        /* Cabecera */
-        header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 10px; height: 15%; border-bottom: 1px solid #222; 
-        }
-        .calib-box { 
-            width: 70px; height: 60px; border: 2px solid #555; border-radius: 10px; 
-            display: flex; align-items: center; justify-content: center; font-weight: bold; 
-        }
-        .tanque-box { 
-            font-size: 35px; color: #00ffcc; font-weight: bold; text-shadow: 0 0 10px #00ffcc; 
-        }
+    .header-item { flex: 1; display: flex; justify-content: center; align-items: center; }
 
-        /* Mapa Central */
-        #mapa { 
-            flex-grow: 1; background: #0a0a0a; border: 1px solid #111; 
-            display: flex; justify-content: center; align-items: center; position: relative; 
-        }
-        .linea-ruta { position: absolute; border: 1px dashed #00ffcc; width: 50%; height: 50%; opacity: 0.3; }
+    /* Botón de calibración con estilo de marco */
+    #calib-btn {
+        width: 60px;
+        height: 60px;
+        border: 2px solid #555;
+        border-radius: 12px;
+        font-size: 2em;
+        color: #555;
+        background: rgba(0,0,0,0.5);
+        transition: all 0.3s;
+        user-select: none; /* Evita seleccionar texto al mantener presionado */
+    }
 
-        /* Controles Inferiores */
-        .controles { height: 20%; display: flex; flex-direction: column; padding: 10px; gap: 10px; }
-        .row-controles { display: flex; justify-content: space-around; width: 100%; gap: 10px; }
+    /* Nombre central */
+    #header-container h1 {
+        margin: 0;
+        font-size: 1.5em;
+        color: #0f0;
+        text-shadow: 0 0 10px #0f0;
+        white-space: nowrap;
+    }
+
+    /* Tanque neón grande a la derecha */
+    #fuel-display {
+        font-size: 2em;
+        font-weight: bold;
+        color: #0f0;
+        text-shadow: 0 0 15px #0f0;
+    }
+</style>
+
+<div id="header-container">
+    <div class="header-item" style="justify-content: flex-start;">
+        <button id="calib-btn" onmousedown="iniciarPresion()" onmouseup="cancelarPresion()" ontouchstart="iniciarPresion()" ontouchend="cancelarPresion()">-</button>
+    </div>
+    <div class="header-item">
+        <h1>LUCY JHA</h1>
+    </div>
+    <div class="header-item" style="justify-content: flex-end;">
+        <span id="fuel-display">10.0</span>
+    </div>
+</div>
+
+<script>
+    let tiempoPresionado;
+
+    function iniciarPresion() {
+        const btn = document.getElementById('calib-btn');
+        btn.style.borderColor = "#0f0"; // Cambia a verde mientras presionas
         
-        button { 
-            flex: 1; padding: 15px; border-radius: 10px; border: none; 
-            font-weight: bold; font-size: 14px; text-transform: uppercase; 
-        }
-        .btn-main { background: #00ffcc; color: #000; }
-        .btn-extra { background: #ffcc00; color: #000; display: none; }
-        .btn-info { background: #333; color: #fff; }
-    </style>
-</head>
-<body>
-
-    <header>
-        <div id="btnCalibrar" class="calib-box" onmousedown="iniciarCalib()" onmouseup="pararCalib()">-</div>
-        <div style="text-align: center;">
-            <span style="color: #00ffcc; font-weight: bold; font-size: 12px;">LUCY JHA</span>
-        </div>
-        <div class="tanque-box">10.0</div>
-    </header>
-
-    <div id="mapa">
-        <div class="linea-ruta"></div>
-        <span style="color: #333;">[ MAPA NEGRO ACTIVO ]</span>
-    </div>
-
-    <div class="controles">
-        <div class="row-controles">
-            <button id="btnRodar" class="btn-main" onclick="toggleRodar()">Rodar</button>
-            <button id="btnExtra" class="btn-extra" onclick="activarExtra()">Extra</button>
-        </div>
-        <div class="row-controles">
-            <button class="btn-info" onclick="abrirInforme()">Informe 📊</button>
-        </div>
-    </div>
-
-    <script>
-        let rodando = false;
-        let pausado = false;
-
-        function toggleRodar() {
-            const btn = document.getElementById('btnRodar');
-            const btnEx = document.getElementById('btnExtra');
-            
-            if (!rodando) {
-                rodando = true; btn.innerText = "Pausar";
-            } else if (!pausado) {
-                pausado = true; btn.innerText = "Reanudar"; btnEx.style.display = "block";
-            } else {
-                pausado = false; btn.innerText = "Pausar"; btnEx.style.display = "none";
+        tiempoPresionado = setTimeout(() => {
+            let nuevoNivel = prompt("CALIBRACIÓN: Ingrese los litros actuales en el tanque:");
+            if (nuevoNivel !== null && !isNaN(nuevoNivel)) {
+                fuelRestante = parseFloat(nuevoNivel);
+                actualizarPantallaCombustible();
+                alert("Calibración exitosa ✅");
             }
-        }
+            btn.style.borderColor = "#555";
+        }, 3000); // 3 segundos de espera
+    }
 
-        function abrirInforme() {
-            const nombre = prompt("Finalizar ruta. ¿Nombre del cliente/casa?");
-            if(nombre) alert("Ruta '" + nombre + "' guardada en Informe.");
-        }
+    function cancelarPresion() {
+        clearTimeout(tiempoPresionado);
+        document.getElementById('calib-btn').style.borderColor = "#555";
+    }
 
-        function iniciarCalib() { /* Lógica de 3s */ }
-        function pararCalib() { /* Lógica de 3s */ }
-    </script>
-</body>
-</html>
+    function actualizarPantallaCombustible() {
+        document.getElementById('fuel-display').innerText = fuelRestante.toFixed(1);
+        // También actualizamos el valor en el resto de la app si es necesario
+    }
+</script>
