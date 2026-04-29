@@ -224,7 +224,10 @@ let baseDeDatosRutas = JSON.parse(localStorage.getItem('lucy_database') || "{}")
         let n = prompt("Nombre para este punto (Ej: Taller, Bodega):");
         if(n) {
             let id = n.toUpperCase();
-            baseDeDatosRutas[id] = { coords: ultimaPos, camino: poly.getLatLngs() };
+            baseDeDatosRutas[id] = { 
+                coords: ultimaPos, 
+                camino: poly.getLatLngs() 
+            };
             localStorage.setItem('lucy_database', JSON.stringify(baseDeDatosRutas));
             crearM(id, ultimaPos, poly.getLatLngs());
         }
@@ -232,6 +235,7 @@ let baseDeDatosRutas = JSON.parse(localStorage.getItem('lucy_database') || "{}")
         grabando = false;
         alert("✅ Ruta guardada");
     }
+}
 
 function crearM(n, p, r) {
     let m = L.marker(p).addTo(map).bindTooltip(n, {permanent:true, className:'etiqueta-fija'});
@@ -241,15 +245,17 @@ function crearM(n, p, r) {
     });
 }
 
-// Esto despierta a Lucy y al Mapa apenas carga
+// ESTO ES LO QUE DESPIERTA LOS BOTONES Y EL MAPA
 window.addEventListener('load', () => {
     setTimeout(() => {
-        if(map) map.invalidateSize(); 
+        if(typeof map !== 'undefined') map.invalidateSize();
         Object.keys(baseDeDatosRutas).forEach(k => {
             crearM(k, baseDeDatosRutas[k].coords, baseDeDatosRutas[k].camino);
-        });
+    
+   });
     }, 800);
 });
-    </script>
+</script>
+
 </body>
 </html>
