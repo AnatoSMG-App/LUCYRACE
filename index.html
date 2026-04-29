@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - MODO PROFESIONAL</title>
+    <title>LUCY JHA - PROFESIONAL V2</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -13,26 +13,29 @@
         
         #map { height: 100vh; width: 100vw; z-index: 1; }
 
-        /* CONTROLES PRINCIPALES */
-        .controls { position: absolute; bottom: 15px; left: 10px; right: 10px; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 20px; z-index: 1000; border: 2px solid #0f0; }
+        .controls { position: absolute; bottom: 15px; left: 10px; right: 10px; background: rgba(0,0,0,0.95); padding: 15px; border-radius: 20px; z-index: 1000; border: 2px solid #0f0; }
         
-        /* MINI CONTADORES SOBRE BOTONES */
-        .mini-stats { display: flex; justify-content: space-around; font-size: 0.75em; margin-bottom: 5px; font-weight: bold; }
-        .stats-cliente { color: #ffae00; }
-        .stats-extra { color: #ff00ea; }
+        /* MINI CONTADORES FLOTANTES (Lo que pediste en el video) */
+        .floating-stats { display: flex; justify-content: space-around; margin-bottom: 10px; text-align: center; }
+        .stat-group { flex: 1; padding: 5px; border-radius: 10px; }
+        .stat-group.cliente { border: 1px solid #ffae00; margin-right: 5px; color: #ffae00; }
+        .stat-group.extra { border: 1px solid #ff00ea; margin-left: 5px; color: #ff00ea; }
+        .mini-label { font-size: 0.5em; font-weight: bold; text-transform: uppercase; display: block; }
+        .mini-val { font-size: 0.9em; font-weight: bold; }
+        .mini-money { font-size: 1.1em; display: block; color: #fff; }
 
-        .btn-group { display: flex; gap: 10px; margin-top: 5px; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 15px; font-size: 1em; font-weight: bold; cursor: pointer; }
+        .btn-group { display: flex; gap: 10px; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 1em; font-weight: bold; cursor: pointer; }
         .btn-start { background: #0f0; color: #000; }
         .btn-pause { background: #ffae00; color: #000; }
         .btn-extra { background: #00fbff; color: #000; }
-        .btn-stop { background: #ff0000; color: #fff; margin-top: 8px; }
+        .btn-stop { background: #ff0000; color: #fff; margin-top: 10px; height: 45px; padding: 0; }
 
-        /* PANTALLA INFORME */
+        /* HISTORIAL RECUPERADO */
         #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 2000; display: none; padding: 15px; box-sizing: border-box; overflow-y: auto; }
-        .corte-card { padding: 10px; border-radius: 10px; margin-bottom: 8px; color: #fff; font-size: 0.8em; }
-        .btn-dias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
-        .btn-dias button { padding: 10px; background: #eee; font-size: 0.7em; color: #000; border-radius: 8px; border: 1px solid #ccc; }
+        .corte-card { padding: 12px; border-radius: 12px; margin-bottom: 10px; color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-dias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+        .btn-dias button { padding: 10px; background: #f0f0f0; font-size: 0.75em; color: #000; border-radius: 10px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -41,11 +44,11 @@
     <div id="tank-display-top">10.0</div>
 
     <div id="pantalla-informe">
-        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; margin-bottom: 10px;">⬅ MAPA</button>
-        <div class="corte-card" style="background: #28a745;"><b>7 DÍAS:</b> <span id="c7-txt">0 km | $0.00</span></div>
-        <div class="corte-card" style="background: #17a2b8;"><b>15 DÍAS:</b> <span id="c15-txt">0 km | $0.00</span></div>
+        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; margin-bottom: 15px; border-radius: 10px;">⬅ VOLVER</button>
+        <div class="corte-card" style="background: #28a745;"><b>7 DÍAS (SEMANAL):</b><br><span id="c7-txt">0.0 km | $0.00</span></div>
+        <div class="corte-card" style="background: #17a2b8;"><b>15 DÍAS (QUINCENAL):</b><br><span id="c15-txt">0.0 km | $0.00</span></div>
         
-        <div id="detalle-dia" style="background:#fff3cd; padding:10px; border-radius:10px; font-size:0.85em; margin: 10px 0; border: 1px solid #ffeeba;">Toca un día abajo:</div>
+        <div id="detalle-dia" style="background:#fff3cd; padding:12px; border-radius:12px; font-size:0.9em; margin: 10px 0; border: 1px solid #ffeeba;">Toca un día para ver detalle:</div>
         
         <div class="btn-dias">
             <button onclick="verDia(this, 'Lunes')">LUN</button>
@@ -61,20 +64,22 @@
     <div id="map"></div>
 
     <div class="controls">
-        <div class="mini-stats">
-            <div id="box-cliente" style="text-align: center; flex:1;">
-                <div class="stats-cliente">Ruta: <span id="c-km">0.0</span>km | <span id="c-time">00:00</span></div>
-                <div class="stats-cliente" style="font-size: 1.2em;">$<span id="c-money">0.00</span></div>
+        <div class="floating-stats">
+            <div class="stat-group cliente">
+                <span class="mini-label">Ruta Cliente</span>
+                <span class="mini-val"><span id="c-time">00:00</span> | <span id="c-km">0.0</span>km</span>
+                <span class="mini-money">$<span id="c-money">0.00</span></span>
             </div>
-            <div id="box-extra" style="text-align: center; flex:1; border-left: 1px solid #444;">
-                <div class="stats-extra">Extra: <span id="e-km">0.0</span>km | <span id="e-time">00:00</span></div>
-                <div class="stats-extra" style="font-size: 1.2em;">$<span id="e-money">0.00</span></div>
+            <div class="stat-group extra">
+                <span class="mini-label">Mandado Extra</span>
+                <span class="mini-val"><span id="e-time">00:00</span> | <span id="e-km">0.0</span>km</span>
+                <span class="mini-money">$<span id="e-money">0.00</span></span>
             </div>
         </div>
 
         <div id="setup-area">
-            <input type="range" id="fuel-slider" min="0" max="15" step="0.5" value="10" style="width:100%;">
-            <button class="btn-start" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
+            <input type="range" id="fuel-slider" min="0" max="15" step="0.5" value="10" style="width:100%; accent-color:#0f0;">
+            <button class="btn-start" style="margin-top:10px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
 
         <div id="run-area" style="display:none;">
@@ -85,7 +90,7 @@
             <button class="btn-stop" onclick="finalizarRuta()">TERMINAR DÍA 🏁</button>
         </div>
         
-        <button onclick="abrirInforme()" style="background:#fff; color:#000; margin-top:8px; height:40px; font-size:0.8em; border:1px solid #0f0; border-radius:10px;">HISTORIAL 📊</button>
+        <button onclick="abrirInforme()" style="background:#fff; color:#000; margin-top:10px; height:45px; border:2px solid #0f0; border-radius:12px; font-weight:bold;">VER HISTORIAL 📊</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -103,16 +108,18 @@
 
         function actualizarUI() {
             document.getElementById('tank-display-top').innerText = fuelR.toFixed(1);
-            // Cliente
+            // Actualizar Cliente
             document.getElementById('c-km').innerText = dRuta.toFixed(1);
             document.getElementById('c-money').innerText = (dRuta * factor * PRECIO).toFixed(2);
-            // Extra
+            // Actualizar Extra
             document.getElementById('e-km').innerText = dExtra.toFixed(1);
             document.getElementById('e-money').innerText = (dExtra * factor * PRECIO).toFixed(2);
             
-            // Totales Informe
-            let tKm = dRuta + dExtra;
-            document.getElementById('c7-txt').innerText = `${tKm.toFixed(1)} km | $${(tKm * factor * PRECIO).toFixed(2)}`;
+            // Totales para tarjetas de informe
+            let totalKm = dRuta + dExtra;
+            let totalUsd = (totalKm * factor * PRECIO).toFixed(2);
+            document.getElementById('c7-txt').innerText = `${totalKm.toFixed(1)} km | $${totalUsd}`;
+            document.getElementById('c15-txt').innerText = `${totalKm.toFixed(1)} km | $${totalUsd}`;
         }
 
         function iniciarRuta() {
@@ -128,7 +135,7 @@
             navigator.geolocation.watchPosition(pos => {
                 if(enP) return;
                 if(lastPos) {
-                    let d = 0.02; // Simulado
+                    let d = 0.03; // Simulación de avance
                     fuelR -= (d * factor);
                     if(!enE) dRuta += d; else dExtra += d;
                     actualizarUI();
@@ -152,11 +159,11 @@
         function cerrarInforme() { document.getElementById('pantalla-informe').style.display = 'none'; }
         
         function verDia(btn, dia) {
-            document.querySelectorAll('.btn-dias button').forEach(b => b.style.background = '#eee');
+            document.querySelectorAll('.btn-dias button').forEach(b => b.style.background = '#f0f0f0');
             btn.style.background = '#0f0';
-            document.getElementById('detalle-dia').innerHTML = `<b>DETALLE ${dia.toUpperCase()}:</b><br>🏠 Cliente: ${dRuta.toFixed(1)}km ($${(dRuta*factor*PRECIO).toFixed(2)})<br>🚀 Extra: ${dExtra.toFixed(1)}km ($${(dExtra*factor*PRECIO).toFixed(2)})<br>⛽ Total: ${(fuelI-fuelR).toFixed(1)} Litros`;
+            document.getElementById('detalle-dia').innerHTML = `<b>RESUMEN ${dia.toUpperCase()}:</b><br>🏠 Ruta Cliente: ${dRuta.toFixed(1)}km ($${(dRuta*factor*PRECIO).toFixed(2)})<br>🚀 Mandado Extra: ${dExtra.toFixed(1)}km ($${(dExtra*factor*PRECIO).toFixed(2)})<br>⛽ Gastado: ${(fuelI-fuelR).toFixed(1)} Litros`;
         }
-        function finalizarRuta() { alert("Día finalizado exitosamente."); location.reload(); }
+        function finalizarRuta() { alert("Día terminado. ¡Buen trabajo!"); location.reload(); }
     </script>
 </body>
 </html>
