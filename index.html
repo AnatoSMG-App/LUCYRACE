@@ -219,27 +219,38 @@ let baseDeDatosRutas = JSON.parse(localStorage.getItem('lucy_database') || "{}")
             let gC = dC * factor; let gE = dE * factor;
             document.getElementById('detalle-dia').innerHTML = `<b>RESUMEN ${dia.toUpperCase()}</b><br>🏠 Cliente: ${dC.toFixed(2)}km | ${gC.toFixed(1)}L | $${(gC*PRECIO).toFixed(2)}<br>🚀 Extra: ${dE.toFixed(2)}km | ${gE.toFixed(1)}L | $${(gE*PRECIO).toFixed(2)}<br>⛽ Total Gas: ${(gC+gE).toFixed(1)} L`;
         }
+     function finalizarRuta() {
+    if(confirm("¿Terminar jornada y guardar ruta?")) {
         let n = prompt("Nombre para este punto (Ej: Taller, Bodega):");
-    if(n) {
-        let id = n.toUpperCase();
-        baseDeDatosRutas[id] = { coords: ultimaPos, camino: poly.getLatLngs() };
-        localStorage.setItem('lucy_database', JSON.stringify(baseDeDatosRutas));
-        crearM(id, ultimaPos, poly.getLatLngs());
+        if(n) {
+            let id = n.toUpperCase();
+            baseDeDatosRutas[id] = { coords: ultimaPos, camino: poly.getLatLngs() };
+            localStorage.setItem('lucy_database', JSON.stringify(baseDeDatosRutas));
+            crearM(id, ultimaPos, poly.getLatLngs());
+        }
+        poly.setLatLngs([]); 
+        grabando = false;
+        alert("✅ Ruta guardada");
     }
-    poly.setLatLngs([]); 
-    grabando = false; 
- }
-        function crearM(n, p, r) {
+}
+
+function crearM(n, p, r) {
     let m = L.marker(p).addTo(map).bindTooltip(n, {permanent:true, className:'etiqueta-fija'});
     m.on('click', () => {
         if(m.l) { map.removeLayer(m.l); m.l = null; }
         else if(r) { m.l = L.polyline(r, {color:'#0f0', weight:4, dashArray:'5,10'}).addTo(map); }
     });
 }
-window.onload = () => {
-    Object.keys(baseDeDatosRutas).forEach(k => {
-        crearM(k, baseDeDatosRutas[k].coords, baseDeDatosRutas[k].camino);
-    });
+
+// Esto despierta a Lucy y al Mapa apenas carga
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if(map) map.invalidateSize(); 
+        Object.keys(baseDeDatosRutas).forEach(k => {
+            crearM(k, baseDeDatosRutas[k].coords, baseDeDatosRutas[k].camino);
+        });
+    }, 800);
+});
     </script>
 </body>
 </html>
