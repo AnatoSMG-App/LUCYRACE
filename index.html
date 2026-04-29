@@ -3,133 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LucyRace - Control Total</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>LUCY JHA - Salida 1</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
-        #header { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 1000; }
-        #header h1 { margin: 0; font-size: 2em; color: #0f0; text-shadow: 0 0 10px #0f0; letter-spacing: 5px; }
-        
-        #map { height: 100vh; width: 100vw; z-index: 1; }
-        
-        .controls { 
-            position: absolute; bottom: 30px; left: 15px; right: 15px; 
-            background: rgba(0,0,0,0.9); padding: 20px; border-radius: 20px;
-            z-index: 1000; border: 3px solid #0f0; box-shadow: 0 0 20px #0f0;
+        /* Ajuste para evitar scroll y vista vertical */
+        * { box-sizing: border-box; touch-action: manipulation; }
+        body { 
+            background-color: #000; color: #fff; font-family: sans-serif; 
+            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
         }
 
-        .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
-        .stat-box { text-align: center; }
-        .stat-label { font-size: 0.7em; color: #0f0; font-weight: bold; display: block; }
-        .stat-val { font-size: 1.2em; font-weight: bold; }
+        /* Cabecera */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px; height: 15%; border-bottom: 1px solid #222; 
+        }
+        .calib-box { 
+            width: 70px; height: 60px; border: 2px solid #555; border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; font-weight: bold; 
+        }
+        .tanque-box { 
+            font-size: 35px; color: #00ffcc; font-weight: bold; text-shadow: 0 0 10px #00ffcc; 
+        }
 
-        button { width: 100%; padding: 18px; border: none; border-radius: 12px; font-size: 1.2em; font-weight: bold; cursor: pointer; }
-        .btn-start { background: #0f0; color: #000; }
-        .btn-pause { background: #ffae00; color: #000; display: none; margin-bottom: 10px; }
-        .btn-stop { background: #ff0000; color: #fff; display: none; }
+        /* Mapa Central */
+        #mapa { 
+            flex-grow: 1; background: #0a0a0a; border: 1px solid #111; 
+            display: flex; justify-content: center; align-items: center; position: relative; 
+        }
+        .linea-ruta { position: absolute; border: 1px dashed #00ffcc; width: 50%; height: 50%; opacity: 0.3; }
+
+        /* Controles Inferiores */
+        .controles { height: 20%; display: flex; flex-direction: column; padding: 10px; gap: 10px; }
+        .row-controles { display: flex; justify-content: space-around; width: 100%; gap: 10px; }
         
-        #fuel-slider { width: 100%; margin-top: 10px; accent-color: #0f0; }
+        button { 
+            flex: 1; padding: 15px; border-radius: 10px; border: none; 
+            font-weight: bold; font-size: 14px; text-transform: uppercase; 
+        }
+        .btn-main { background: #00ffcc; color: #000; }
+        .btn-extra { background: #ffcc00; color: #000; display: none; }
+        .btn-info { background: #333; color: #fff; }
     </style>
 </head>
 <body>
 
-    <div id="header"><h1>LUCY</h1></div>
-    <div id="map"></div>
-
-    <div class="controls">
-        <div class="stats">
-            <div class="stat-box"><span class="stat-label">TIEMPO</span><span id="time">00:00</span></div>
-            <div class="stat-box"><span class="stat-label">DISTANCIA</span><span id="dist">0.00 km</span></div>
-            <div class="stat-box"><span class="stat-label">TANQUE</span><span id="fuel" style="color: #0f0;">-- L</span></div>
+    <header>
+        <div id="btnCalibrar" class="calib-box" onmousedown="iniciarCalib()" onmouseup="pararCalib()">-</div>
+        <div style="text-align: center;">
+            <span style="color: #00ffcc; font-weight: bold; font-size: 12px;">LUCY JHA</span>
         </div>
+        <div class="tanque-box">10.0</div>
+    </header>
 
-        <div id="setup-area">
-            <label style="display:block; text-align:center;">Litros iniciales: <span id="fuel-val">10</span>L</label>
-            <input type="range" id="fuel-slider" min="1" max="20" value="10">
-            <button class="btn-start" style="margin-top:15px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
-        </div>
-
-        <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">EN ESPERA / PAUSA ⏳</button>
-        <button id="stop-btn" class="btn-stop" onclick="finalizarRuta()">TERMINAR RUTA 🏁</button>
+    <div id="mapa">
+        <div class="linea-ruta"></div>
+        <span style="color: #333;">[ MAPA NEGRO ACTIVO ]</span>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div class="controles">
+        <div class="row-controles">
+            <button id="btnRodar" class="btn-main" onclick="toggleRodar()">Rodar</button>
+            <button id="btnExtra" class="btn-extra" onclick="activarExtra()">Extra</button>
+        </div>
+        <div class="row-controles">
+            <button class="btn-info" onclick="abrirInforme()">Informe 📊</button>
+        </div>
+    </div>
+
     <script>
-        let map = L.map('map').setView([10.17, -67.92], 15);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-        
-        let path = L.polyline([], {color: '#0f0', weight: 6}).addTo(map);
-        let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
+        let rodando = false;
+        let pausado = false;
 
-        let segs = 0, timer, watchID, lastPos = null, totalDist = 0;
-        let fuelRestante = 10, fuelConsumoPorKm = 0.05; // Ajusta este valor según tu moto
-        let enPausa = false;
-
-        document.getElementById('fuel-slider').oninput = function() {
-            fuelRestante = parseFloat(this.value);
-            document.getElementById('fuel-val').innerText = this.value;
-            document.getElementById('fuel').innerText = this.value + " L";
-        };
-
-        function calcularDistancia(lat1, lon1, lat2, lon2) {
-            let R = 6371; 
-            let dLat = (lat2-lat1) * Math.PI / 180;
-            let dLon = (lon2-lon1) * Math.PI / 180;
-            let a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
-
-        function iniciarRuta() {
-            document.getElementById('setup-area').style.display = 'none';
-            document.getElementById('pause-btn').style.display = 'block';
-            document.getElementById('stop-btn').style.display = 'block';
+        function toggleRodar() {
+            const btn = document.getElementById('btnRodar');
+            const btnEx = document.getElementById('btnExtra');
             
-            timer = setInterval(() => {
-                if(!enPausa) {
-                    segs++;
-                    let m = Math.floor(segs/60).toString().padStart(2,'0');
-                    let s = (segs%60).toString().padStart(2,'0');
-                    document.getElementById('time').innerText = `${m}:${s}`;
-                }
-            }, 1000);
-
-            if(navigator.geolocation) {
-                watchID = navigator.geolocation.watchPosition(pos => {
-                    if(enPausa) return;
-                    let lat = pos.coords.latitude;
-                    let lon = pos.coords.longitude;
-                    
-                    if(lastPos) {
-                        let d = calcularDistancia(lastPos.lat, lastPos.lon, lat, lon);
-                        totalDist += d;
-                        fuelRestante -= (d * fuelConsumoPorKm);
-                        document.getElementById('dist').innerText = totalDist.toFixed(2) + " km";
-                        document.getElementById('fuel').innerText = Math.max(0, fuelRestante).toFixed(2) + " L";
-                    }
-                    
-                    lastPos = {lat, lon};
-                    marker.setLatLng([lat, lon]);
-                    path.addLatLng([lat, lon]);
-                    map.panTo([lat, lon]);
-                }, null, {enableHighAccuracy: true});
+            if (!rodando) {
+                rodando = true; btn.innerText = "Pausar";
+            } else if (!pausado) {
+                pausado = true; btn.innerText = "Reanudar"; btnEx.style.display = "block";
+            } else {
+                pausado = false; btn.innerText = "Pausar"; btnEx.style.display = "none";
             }
         }
 
-        function pausarRuta() {
-            enPausa = !enPausa;
-            let btn = document.getElementById('pause-btn');
-            btn.innerText = enPausa ? "REANUDAR RUTA ▶️" : "EN ESPERA / PAUSA ⏳";
-            btn.style.background = enPausa ? "#0f0" : "#ffae00";
+        function abrirInforme() {
+            const nombre = prompt("Finalizar ruta. ¿Nombre del cliente/casa?");
+            if(nombre) alert("Ruta '" + nombre + "' guardada en Informe.");
         }
 
-        function finalizarRuta() {
-            clearInterval(timer);
-            navigator.geolocation.clearWatch(watchID);
-            let resumen = `--- INFORME LUCY ---\nTiempo: ${document.getElementById('time').innerText}\nDistancia: ${totalDist.toFixed(2)} km\nCombustible Final: ${fuelRestante.toFixed(2)} L`;
-            alert(resumen);
-            location.reload(); 
-        }
+        function iniciarCalib() { /* Lógica de 3s */ }
+        function pararCalib() { /* Lógica de 3s */ }
     </script>
 </body>
 </html>
