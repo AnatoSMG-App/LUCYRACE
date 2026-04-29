@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V6.0 PRO</title>
+    <title>LUCY JHA - V3.2 PRO RECTIFICADA</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -32,12 +32,11 @@
         .btn-pause { background: #ffae00; color: #000; }
         .btn-extra { background: #00fbff; color: #000; }
         .btn-stop { background: #ff0000; color: #fff; margin-top: 10px; height: 45px; font-size: 0.9em; }
-        
-        /* HISTORIAL MEJORADO */
-        #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: #fff; z-index: 2000; display: none; padding: 15px; box-sizing: border-box; overflow-y: auto; }
-        .lista-rutas { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
-        .item-ruta { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid #0f0; }
-        .btn-borrar { background: #ff0000; color: #fff; width: 35px; height: 35px; padding: 0; border-radius: 50%; font-size: 0.8em; }
+        #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 2000; display: none; padding: 15px; box-sizing: border-box; overflow-y: auto; }
+        .card-informe { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: #fff; }
+        #detalle-dia { background: #fff3cd; padding: 15px; border-radius: 15px; margin: 15px 0; border: 1px solid #ffeeba; font-size: 0.9em; line-height: 1.5; }
+        .btn-semana { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .btn-semana button { padding: 12px; background: #eee; font-size: 0.8em; color: #000; border-radius: 12px; border: 1px solid #ccc; height: 50px; }
         .base-label { background: #000 !important; color: #0f0 !important; border: 1.5px solid #0f0 !important; font-weight: 900 !important; font-size: 0.75em !important; padding: 2px 5px !important; opacity: 1 !important; }
     </style>
 </head>
@@ -53,10 +52,20 @@
     </div>
 
     <div id="pantalla-informe">
-        <button onclick="cerrarInforme()" style="background:#333; color:#fff; width: auto; border-radius: 12px; padding: 10px 25px;">⬅ VOLVER</button>
-        <h2 style="color:#0f0; font-size: 1.2em;">HISTORIAL DE TRABAJOS</h2>
-        <div id="lista-rutas-container" class="lista-rutas">
-            </div>
+        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; border-radius: 12px; padding: 10px 25px;">⬅ VOLVER</button>
+        <div class="card-informe" style="background: #28a745; margin-top:10px;">CORTE 7 DÍAS:<br><span id="c7-txt">0km | 0L | $0.00</span></div>
+        <div class="card-informe" style="background: #17a2b8;">CORTE 15 DÍAS:<br><span id="c15-txt">0km | 0L | $0.00</span></div>
+        <div class="card-informe" style="background: #6f42c1;">CORTE 30 DÍAS (MENSUAL):<br><span id="c30-txt">0km | 0L | $0.00</span></div>
+        <div id="detalle-dia">Toca un día para ver el desglose completo.</div>
+        <div class="btn-semana">
+            <button onclick="verDia(this, 'Lunes')">LUN</button>
+            <button onclick="verDia(this, 'Martes')">MAR</button>
+            <button onclick="verDia(this, 'Miércoles')">MIE</button>
+            <button onclick="verDia(this, 'Jueves')">JUE</button>
+            <button onclick="verDia(this, 'Viernes')">VIE</button>
+            <button onclick="verDia(this, 'Sábado')">SAB</button>
+            <button onclick="verDia(this, 'Domingo')">DOM</button>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -84,33 +93,33 @@
 
         <div id="run-area" style="display:none;">
             <div class="btn-group">
-                <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">PAUSA / MARCAR 📍</button>
+                <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">MARCAR / PAUSA 📍</button>
                 <button id="extra-btn" class="btn-extra" onclick="activarExtra()">EXTRA 🚀</button>
             </div>
             <button class="btn-stop" onclick="finalizarRuta()">TERMINAR DÍA 🏁</button>
         </div>
-        <button onclick="abrirInforme()" style="background:#fff; color:#000; margin-top:10px; height:45px; font-size:0.9em; border-radius:15px; font-weight:bold; border:2px solid #0f0;">REGISTROS Y RUTAS 📊</button>
+        <button onclick="abrirInforme()" style="background:#fff; color:#000; margin-top:10px; height:45px; font-size:0.9em; border-radius:15px; font-weight:bold; border:2px solid #0f0;">HISTORIAL 📊</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map = L.map('map', {zoomControl: false}).setView([10.17, -67.92], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-        let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
-        let poly = L.polyline([], {color: '#0f0', weight: 6, opacity: 0.8}).addTo(map);
-        let markersGuardados = {};
+        let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
+        let poly = L.polyline([], {color: '#0f0', weight: 5}).addTo(map);
 
-        let tC = 0, tE = 0, dC = 0, dE = 0, fuelI = 10, fuelR = 10, enP = false, enE = false, baseFijada = false, grabando = false;
+        let tC = 0, tE = 0, timerC, timerE, dC = 0, dE = 0, fuelI = 10, fuelR = 10, enP = false, enE = false, baseFijada = false;
         let factor = 0.05; const PRECIO = 0.50;
         let ultimaPos = null;
 
-        let baseDeDatosRutas = JSON.parse(localStorage.getItem('lucy_database') || "{}");
+        // CARGA DE MEMORIA
+        let DB = JSON.parse(localStorage.getItem('lucy_data')) || { etiquetas: [], acumulado: {km:0, l:0, m:0} };
 
         function getDist(p1, p2) {
-            const R = 6371; 
-            const dLat = (p2[0]-p1[0])*Math.PI/180;
-            const dLon = (p2[1]-p1[1])*Math.PI/180;
-            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(p1[0]*Math.PI/180)*Math.cos(p2[0]*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+            let R = 6371; 
+            let dLat = (p2[0]-p1[0])*Math.PI/180;
+            let dLon = (p2[1]-p1[1])*Math.PI/180;
+            let a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(p1[0]*Math.PI/180)*Math.cos(p2[0]*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
             return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
@@ -120,12 +129,12 @@
             let latlng = [pos.coords.latitude, pos.coords.longitude];
             if(!baseFijada) {
                 L.marker(latlng).addTo(map).bindTooltip("INICIO", {permanent: true, className: 'base-label'});
-                map.setView(latlng, 18);
+                map.setView(latlng, 17);
                 baseFijada = true;
             }
-            if(grabando && ultimaPos && !enP) {
+            if(ultimaPos && !enP) {
                 let d = getDist(ultimaPos, latlng);
-                if(d > 0.001) {
+                if(d > 0.005) { 
                     if(enE) dE += d; else dC += d;
                     fuelR -= (d * factor);
                     poly.addLatLng(latlng);
@@ -136,106 +145,102 @@
             actualizarUI();
         }, null, {enableHighAccuracy: true});
 
-        setInterval(() => {
-            if (grabando) {
-                tE++; 
-                document.getElementById('e-time').innerText = fmt(tE);
-                if (!enP && !enE) { 
-                    tC++; 
-                    document.getElementById('c-time').innerText = fmt(tC); 
-                }
-            }
-        }, 1000);
+        function actualizarUI() {
+            document.getElementById('tank-display-top').innerText = fuelR.toFixed(1);
+            if(fuelR <= 4.0) document.getElementById('tank-display-top').classList.add('palpitante');
+            else document.getElementById('tank-display-top').classList.remove('palpitante');
+
+            document.getElementById('c-km').innerText = dC.toFixed(2);
+            document.getElementById('c-money').innerText = (dC * factor * PRECIO).toFixed(2);
+            document.getElementById('c-gas').innerText = (dC * factor).toFixed(1);
+
+            document.getElementById('e-km').innerText = dE.toFixed(2);
+            document.getElementById('e-money').innerText = (dE * factor * PRECIO).toFixed(2);
+            document.getElementById('e-gas').innerText = (dE * factor).toFixed(1);
+            
+            let tKm = DB.acumulado.km + dC + dE; 
+            let tG = DB.acumulado.l + ((dC + dE) * factor);
+            let str = `${tKm.toFixed(2)}km | ${tG.toFixed(1)}L | $${(tG * PRECIO).toFixed(2)}`;
+            document.getElementById('c7-txt').innerText = str;
+            document.getElementById('c15-txt').innerText = str;
+            document.getElementById('c30-txt').innerText = str;
+        }
 
         function iniciarRuta() {
-            grabando = true;
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('run-area').style.display = 'block';
+            timerC = setInterval(() => { if(!enP) { tC++; document.getElementById('c-time').innerText = fmt(tC); } }, 1000);
+            timerE = setInterval(() => { if(enE) { tE++; document.getElementById('e-time').innerText = fmt(tE); } }, 1000);
+        }
+
+        function calibrar() {
+            let lleg = parseFloat(document.getElementById('litros-llegada').value);
+            if(dC+dE > 0) {
+                factor = (fuelI - lleg) / (dC + dE);
+                alert("Calibración exitosa.");
+                actualizarUI();
+            }
         }
 
         function activarExtra() {
             enE = !enE;
-            let btn = document.getElementById('extra-btn');
-            btn.style.background = enE ? "#ff00ea" : "#00fbff";
-            btn.innerText = enE ? "EXTRA ON 🔥" : "EXTRA 🚀";
+            document.getElementById('extra-btn').style.background = enE ? "#ff00ea" : "#00fbff";
+            document.getElementById('extra-btn').innerText = enE ? "EXTRA ON 🔥" : "EXTRA 🚀";
+        }
+
+        function crearEtiqueta(latlng, nombre, guardar = true) {
+            let m = L.marker(latlng).addTo(map).bindTooltip(nombre.toUpperCase(), {permanent: true, className: 'base-label'});
+            let temp;
+            m.on('mousedown touchstart', () => {
+                temp = setTimeout(() => {
+                    if(confirm("¿Eliminar etiqueta: " + nombre + "?")) {
+                        map.removeLayer(m);
+                        DB.etiquetas = DB.etiquetas.filter(x => x.n !== nombre);
+                        localStorage.setItem('lucy_data', JSON.stringify(DB));
+                    }
+                }, 3000);
+            });
+            m.on('mouseup mouseleave touchend', () => clearTimeout(temp));
+            if(guardar) {
+                DB.etiquetas.push({l: latlng, n: nombre});
+                localStorage.setItem('lucy_data', JSON.stringify(DB));
+            }
         }
 
         function pausarRuta() { 
             enP = !enP; 
-            document.getElementById('pause-btn').innerText = enP ? "REANUDAR ▶️" : "PAUSA / MARCAR 📍"; 
-        }
-
-        function finalizarRuta() {
-            if(confirm("¿Terminar jornada y guardar reporte?")) {
-                let n = prompt("Nombre del Cliente o Lugar:");
-                if(n) {
-                    let id = n.toUpperCase() + " - " + new Date().toLocaleTimeString();
-                    baseDeDatosRutas[id] = { 
-                        coords: ultimaPos, 
-                        camino: poly.getLatLngs(),
-                        datos: `KM: ${dC.toFixed(2)} | Gas: ${(dC*factor).toFixed(1)}L`
-                    };
-                    localStorage.setItem('lucy_database', JSON.stringify(baseDeDatosRutas));
-                    crearM(id, ultimaPos, poly.getLatLngs());
-                }
-                
-                // MASTER RESET
-                grabando = false; enP = false; enE = false;
-                tC = 0; tE = 0; dC = 0; dE = 0;
-                poly.setLatLngs([]);
-                document.getElementById('setup-area').style.display = 'block';
-                document.getElementById('run-area').style.display = 'none';
-                actualizarUI();
-                alert("✅ Todo guardado y reseteado.");
+            document.getElementById('pause-btn').innerText = enP ? "REANUDAR ▶️" : "MARCAR / PAUSA 📍"; 
+            if(enP && ultimaPos) {
+                let n = prompt("¿Nombre del lugar?");
+                if(n) crearEtiqueta(ultimaPos, n);
             }
-        }
-
-        function borrarRuta(id) {
-            if(confirm("¿Borrar el registro de " + id + "?")) {
-                if(markersGuardados[id]) map.removeLayer(markersGuardados[id]);
-                delete baseDeDatosRutas[id];
-                localStorage.setItem('lucy_database', JSON.stringify(baseDeDatosRutas));
-                actualizarListaInforme();
-            }
-        }
-
-        function actualizarListaInforme() {
-            let cont = document.getElementById('lista-rutas-container');
-            cont.innerHTML = "";
-            Object.keys(baseDeDatosRutas).forEach(id => {
-                let div = document.createElement('div');
-                div.className = 'item-ruta';
-                div.innerHTML = `<span><b>${id}</b><br><small>${baseDeDatosRutas[id].datos || ''}</small></span>
-                                 <button class="btn-borrar" onclick="borrarRuta('${id}')">X</button>`;
-                cont.appendChild(div);
-            });
-        }
-
-        function crearM(n, p, r) {
-            let m = L.marker(p).addTo(map).bindTooltip(n.substring(0,10), {permanent:true, className:'base-label'});
-            markersGuardados[n] = m;
-        }
-
-        function actualizarUI() {
-            document.getElementById('tank-display-top').innerText = fuelR.toFixed(1);
-            document.getElementById('c-km').innerText = dC.toFixed(2);
-            document.getElementById('c-money').innerText = (dC * factor * PRECIO).toFixed(2);
-            document.getElementById('c-gas').innerText = (dC * factor).toFixed(1);
-            document.getElementById('e-km').innerText = dE.toFixed(2);
-            document.getElementById('e-money').innerText = (dE * factor * PRECIO).toFixed(2);
-            document.getElementById('e-gas').innerText = (dE * factor).toFixed(1);
         }
 
         function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); }
-        function abrirInforme() { actualizarListaInforme(); document.getElementById('pantalla-informe').style.display = 'block'; }
+        function abrirInforme() { document.getElementById('pantalla-informe').style.display = 'block'; }
         function cerrarInforme() { document.getElementById('pantalla-informe').style.display = 'none'; }
+        
+        function verDia(btn, dia) {
+            document.querySelectorAll('.btn-semana button').forEach(b => b.style.background = '#eee');
+            btn.style.background = '#0f0';
+            let gC = dC * factor; let gE = dE * factor;
+            document.getElementById('detalle-dia').innerHTML = `<b>RESUMEN ${dia.toUpperCase()}</b><br>🏠 Cliente: ${dC.toFixed(2)}km | ${gC.toFixed(1)}L | $${(gC*PRECIO).toFixed(2)}<br>🚀 Extra: ${dE.toFixed(2)}km | ${gE.toFixed(1)}L | $${(gE*PRECIO).toFixed(2)}<br>⛽ Total Gas: ${(gC+gE).toFixed(1)} L`;
+        }
 
-        window.addEventListener('load', () => {
-            setTimeout(() => { 
-                map.invalidateSize(); 
-                Object.keys(baseDeDatosRutas).forEach(k => crearM(k, baseDeDatosRutas[k].coords, baseDeDatosRutas[k].camino));
-            }, 800);
-        });
+        function finalizarRuta() { 
+            if(confirm("¿Guardar y finalizar día?")) {
+                DB.acumulado.km += (dC + dE);
+                DB.acumulado.l += ((dC + dE) * factor);
+                localStorage.setItem('lucy_data', JSON.stringify(DB));
+                alert("Día finalizado y guardado."); 
+                location.reload(); 
+            }
+        }
+
+        window.onload = () => {
+            DB.etiquetas.forEach(x => crearEtiqueta(x.l, x.n, false));
+            actualizarUI();
+        }
     </script>
 </body>
 </html>
