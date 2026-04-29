@@ -1,87 +1,191 @@
-<style>
-    /* Estilos para la nueva cabecera triple */
-    #header-container {
-        position: absolute;
-        top: 0;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px;
-        z-index: 1000;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-    }
-
-    .header-item { flex: 1; display: flex; justify-content: center; align-items: center; }
-
-    /* Botón de calibración con estilo de marco */
-    #calib-btn {
-        width: 60px;
-        height: 60px;
-        border: 2px solid #555;
-        border-radius: 12px;
-        font-size: 2em;
-        color: #555;
-        background: rgba(0,0,0,0.5);
-        transition: all 0.3s;
-        user-select: none; /* Evita seleccionar texto al mantener presionado */
-    }
-
-    /* Nombre central */
-    #header-container h1 {
-        margin: 0;
-        font-size: 1.5em;
-        color: #0f0;
-        text-shadow: 0 0 10px #0f0;
-        white-space: nowrap;
-    }
-
-    /* Tanque neón grande a la derecha */
-    #fuel-display {
-        font-size: 2em;
-        font-weight: bold;
-        color: #0f0;
-        text-shadow: 0 0 15px #0f0;
-    }
-</style>
-
-<div id="header-container">
-    <div class="header-item" style="justify-content: flex-start;">
-        <button id="calib-btn" onmousedown="iniciarPresion()" onmouseup="cancelarPresion()" ontouchstart="iniciarPresion()" ontouchend="cancelarPresion()">-</button>
-    </div>
-    <div class="header-item">
-        <h1>LUCY JHA</h1>
-    </div>
-    <div class="header-item" style="justify-content: flex-end;">
-        <span id="fuel-display">10.0</span>
-    </div>
-</div>
-
-<script>
-    let tiempoPresionado;
-
-    function iniciarPresion() {
-        const btn = document.getElementById('calib-btn');
-        btn.style.borderColor = "#0f0"; // Cambia a verde mientras presionas
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LUCY JHA - Control Total</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
+        #header { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 1000; }
+        #header h1 { margin: 0; font-size: 2em; color: #0f0; text-shadow: 0 0 10px #0f0; letter-spacing: 5px; }
         
-        tiempoPresionado = setTimeout(() => {
-            let nuevoNivel = prompt("CALIBRACIÓN: Ingrese los litros actuales en el tanque:");
-            if (nuevoNivel !== null && !isNaN(nuevoNivel)) {
-                fuelRestante = parseFloat(nuevoNivel);
-                actualizarPantallaCombustible();
-                alert("Calibración exitosa ✅");
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+        
+        /* Pantalla de Informe (Blanca) */
+        #pantalla-informe { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #fff; color: #000; z-index: 2000; display: none; padding: 20px; box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .controls { 
+            position: absolute; bottom: 30px; left: 15px; right: 15px; 
+            background: rgba(0,0,0,0.9); padding: 20px; border-radius: 20px;
+            z-index: 1000; border: 3px solid #0f0; box-shadow: 0 0 20px #0f0;
+        }
+
+        .stats { display: flex; justify-content: space-around; margin-bottom: 15px; align-items: center; }
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 0.7em; color: #0f0; font-weight: bold; display: block; }
+        .stat-val { font-size: 1.2em; font-weight: bold; }
+        
+        /* Gasolina en Grande */
+        #fuel { font-size: 2.2em !important; text-shadow: 0 0 5px #0f0; }
+
+        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 1em; font-weight: bold; cursor: pointer; }
+        
+        .btn-start { background: #0f0; color: #000; }
+        .btn-pause { background: #ffae00; color: #000; display: none; flex: 2; }
+        .btn-extra { background: #00fbff; color: #000; display: none; flex: 1; }
+        .btn-stop { background: #ff0000; color: #fff; display: none; }
+        .btn-informe { background: #fff; color: #000; margin-top: 10px; border: 2px solid #0f0; }
+
+        /* Estilos Informe */
+        .row-inf { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding: 10px 0; }
+        .btn-dias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; }
+        .btn-dias button { padding: 10px; font-size: 0.8em; background: #eee; color: #000; }
+        .btn-reset { background: #ff4444 !important; color: #fff !important; padding: 5px !important; width: auto !important; font-size: 0.7em !important; }
+    </style>
+</head>
+<body>
+
+    <div id="header"><h1>LUCY JHA</h1></div>
+    
+    <div id="pantalla-informe">
+        <button onclick="cerrarInforme()" style="background:#000; color:#fff; margin-bottom:20px;">⬅ VOLVER AL MAPA</button>
+        <h2 style="text-align:center">Resumen de Actividad</h2>
+        
+        <div class="row-inf">
+            <div><b>7 DÍAS:</b> <span id="inf-7">0 km | 0 L | 0 $</span></div>
+            <button class="btn-reset">Reset</button>
+        </div>
+        <div class="row-inf">
+            <div><b>15 DÍAS:</b> <span id="inf-15">0 km | 0 L | 0 $</span></div>
+            <button class="btn-reset">Reset</button>
+        </div>
+        <div class="row-inf">
+            <div><b>30 DÍAS:</b> <span id="inf-30">0 km | 0 L | 0 $</span></div>
+            <button class="btn-reset">Reset</button>
+        </div>
+
+        <div class="btn-dias">
+            <button>LUN</button><button>MAR</button><button>MIE</button><button>JUE</button>
+            <button>VIE</button><button>SAB</button><button>DOM</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="controls">
+        <div class="stats">
+            <div class="stat-box">
+                <span class="stat-label">CALIBRAR (-)</span>
+                <input type="number" id="calib-neg" value="0" style="width:50px; background:#000; color:#fff; border:1px solid #0f0; text-align:center;">
+            </div>
+            <div class="stat-box"><span class="stat-label">DISTANCIA</span><span id="dist" class="stat-val">0.00 km</span></div>
+            <div class="stat-box"><span class="stat-label">TANQUE</span><span id="fuel" class="stat-val" style="color: #0f0;">10 L</span></div>
+        </div>
+
+        <div id="setup-area">
+            <label style="display:block; text-align:center;">Salida: <span id="fuel-val">10</span>L</label>
+            <input type="range" id="fuel-slider" min="1" max="50" step="0.5" value="10" style="width:100%; accent-color:#0f0;">
+            <button class="btn-start" style="margin-top:15px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
+        </div>
+
+        <div class="btn-group">
+            <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">PAUSA ⏳</button>
+            <button id="extra-btn" class="btn-extra" onclick="activarExtra()">EXTRA</button>
+        </div>
+        <button id="stop-btn" class="btn-stop" onclick="finalizarRuta()">TERMINAR RUTA 🏁</button>
+        <button id="inf-btn" class="btn-informe" onclick="abrirInforme()">INFORME 📊</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map = L.map('map').setView([10.17, -67.92], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        
+        let path = L.polyline([], {color: '#00fbff', weight: 6}).addTo(map);
+        let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
+
+        let segs = 0, timer, watchID, lastPos = null, totalDist = 0;
+        let fuelRestante = 10, fuelConsumoPorKm = 0.05; 
+        let enPausa = false;
+        let enModoExtra = false;
+
+        document.getElementById('fuel-slider').oninput = function() {
+            fuelRestante = parseFloat(this.value);
+            document.getElementById('fuel-val').innerText = this.value;
+            document.getElementById('fuel').innerText = this.value + " L";
+        };
+
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            let R = 6371; 
+            let dLat = (lat2-lat1) * Math.PI / 180;
+            let dLon = (lon2-lon1) * Math.PI / 180;
+            let a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function iniciarRuta() {
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'block';
+            document.getElementById('extra-btn').style.display = 'block';
+            document.getElementById('stop-btn').style.display = 'block';
+            
+            if(navigator.geolocation) {
+                watchID = navigator.geolocation.watchPosition(pos => {
+                    if(enPausa) return;
+                    let lat = pos.coords.latitude;
+                    let lon = pos.coords.longitude;
+                    
+                    if(lastPos) {
+                        let d = calcularDistancia(lastPos.lat, lastPos.lon, lat, lon);
+                        totalDist += d;
+                        fuelRestante -= (d * fuelConsumoPorKm);
+                        document.getElementById('dist').innerText = totalDist.toFixed(2) + " km";
+                        document.getElementById('fuel').innerText = Math.max(0, fuelRestante).toFixed(1) + " L";
+                    }
+                    
+                    lastPos = {lat, lon};
+                    marker.setLatLng([lat, lon]);
+                    if(!enModoExtra) {
+                        path.addLatLng([lat, lon]);
+                    }
+                    map.panTo([lat, lon]);
+                }, null, {enableHighAccuracy: true});
             }
-            btn.style.borderColor = "#555";
-        }, 3000); // 3 segundos de espera
-    }
+        }
 
-    function cancelarPresion() {
-        clearTimeout(tiempoPresionado);
-        document.getElementById('calib-btn').style.borderColor = "#555";
-    }
+        function pausarRuta() {
+            enPausa = !enPausa;
+            let btn = document.getElementById('pause-btn');
+            btn.innerText = enPausa ? "REANUDAR ▶️" : "PAUSA ⏳";
+            btn.style.background = enPausa ? "#0f0" : "#ffae00";
+        }
 
-    function actualizarPantallaCombustible() {
-        document.getElementById('fuel-display').innerText = fuelRestante.toFixed(1);
-        // También actualizamos el valor en el resto de la app si es necesario
-    }
-</script>
+        function activarExtra() {
+            enModoExtra = !enModoExtra;
+            let btn = document.getElementById('extra-btn');
+            btn.style.background = enModoExtra ? "#ff00ea" : "#00fbff";
+            btn.innerText = enModoExtra ? "EXTRA ON" : "EXTRA";
+        }
+
+        function finalizarRuta() {
+            navigator.geolocation.clearWatch(watchID);
+            let recuperados = parseFloat(document.getElementById('calib-neg').value);
+            let gastoFinal = (totalDist * fuelConsumoPorKm).toFixed(2);
+            let costo = (gastoFinal * 0.50).toFixed(2);
+            
+            alert(`--- LUCY JHA INFORME ---\nDistancia: ${totalDist.toFixed(2)} km\nConsumo: ${gastoFinal} L\nGasto: ${costo} $`);
+            location.reload(); 
+        }
+
+        function abrirInforme() { document.getElementById('pantalla-informe').style.display = 'block'; }
+        function cerrarInforme() { document.getElementById('pantalla-informe').style.display = 'none'; }
+    </script>
+</body>
+</html>
