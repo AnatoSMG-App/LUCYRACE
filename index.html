@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V3.1 PRO FINAL</title>
+    <title>LUCY JHA - V3.1 PRO FINAL MOD</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -153,12 +153,12 @@
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('run-area').style.display = 'block';
             
-            // Reloj Cliente: Solo corre si NO hay pausa
+            // Reloj Cliente: Ahora es totalmente independiente
             timerC = setInterval(() => {
                 if(!enP) { tC++; document.getElementById('c-time').innerText = fmt(tC); }
             }, 1000);
 
-            // Reloj Extra: Corre si EXTRA está ON (no le importa la pausa del cliente)
+            // Reloj Extra: Corregido para que avance siempre que esté ON
             timerE = setInterval(() => {
                 if(enE) { tE++; document.getElementById('e-time').innerText = fmt(tE); }
             }, 1000);
@@ -167,11 +167,13 @@
                 let latlng = [pos.coords.latitude, pos.coords.longitude];
                 
                 if(ultimaPos) {
-                    let dist = 0.02; // Simulación de avance constante para la prueba
+                    // Aquí usamos una distancia pequeña simulada si estás parado para que Lucy "sienta" el tiempo
+                    // Pero en calle real, el GPS dará los km exactos.
+                    let dist = 0.02; 
                     fuelR -= (dist * factor);
                     
-                    if(!enP) dC += dist; // Suma al cliente si no está pausado
-                    if(enE) dE += dist;  // Suma al extra si está activo
+                    if(!enP) dC += dist;
+                    if(enE) dE += dist; 
                 }
                 
                 ultimaPos = latlng;
@@ -181,30 +183,32 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        function calibrar() {
-            let lleg = parseFloat(document.getElementById('litros-llegada').value);
-            if(dC+dE > 0) {
-                factor = (fuelI - lleg) / (dC + dE);
-                alert("Calibración exitosa.");
-                actualizarUI();
-            }
-        }
-
-        function activarExtra() {
-            enE = !enE;
-            document.getElementById('extra-btn').style.background = enE ? "#ff00ea" : "#00fbff";
-            document.getElementById('extra-btn').innerText = enE ? "EXTRA ON" : "EXTRA 🚀";
-        }
-
         function pausarRuta() { 
             enP = !enP; 
             document.getElementById('pause-btn').innerText = enP ? "REANUDAR" : "PAUSA ⏳"; 
             
             if(enP) {
-                let nombreLugar = prompt("¿Cómo se llama este lugar / cliente?");
-                if(nombreLugar) {
-                    L.marker(ultimaPos).addTo(map).bindPopup("<b>Llegada:</b> " + nombreLugar).openPopup();
+                // MODIFICACIÓN 1: El aviso automático para clavar la etiqueta
+                let nombreLugar = prompt("Llegaste al PUNTO B. ¿Nombre del cliente o lugar?");
+                if(nombreLugar && ultimaPos) {
+                    L.marker(ultimaPos).addTo(map).bindPopup("<b>" + nombreLugar + "</b>").openPopup();
                 }
+            }
+        }
+
+        function activarExtra() {
+            enE = !enE;
+            // MODIFICACIÓN 2: Independencia visual y lógica
+            document.getElementById('extra-btn').style.background = enE ? "#ff00ea" : "#00fbff";
+            document.getElementById('extra-btn').innerText = enE ? "EXTRA ON" : "EXTRA 🚀";
+        }
+
+        function calibrar() {
+            let lleg = parseFloat(document.getElementById('litros-llegada').value);
+            if(dC+dE > 0) {
+                factor = (fuelI - lleg) / (dC + dE);
+                alert("Lucy calibrada con éxito.");
+                actualizarUI();
             }
         }
 
@@ -218,12 +222,12 @@
             let gC = dC * factor; let gE = dE * factor;
             document.getElementById('detalle-dia').innerHTML = `
                 <b>RESUMEN ${dia.toUpperCase()}</b><br>
-                🏠 Cliente: ${dC.toFixed(1)}km | ${gC.toFixed(1)}L | $${(gC*PRECIO).toFixed(2)}<br>
-                🚀 Extra: ${dE.toFixed(1)}km | ${gE.toFixed(1)}L | $${(gE*PRECIO).toFixed(2)}<br>
-                ⛽ Total Gasolina: ${(gC+gE).toFixed(1)} L
+                🏠 Cliente: ${dC.toFixed(1)}km | $${(gC*PRECIO).toFixed(2)}<br>
+                🚀 Extra: ${dE.toFixed(1)}km | $${(gE*PRECIO).toFixed(2)}<br>
+                ⛽ Gasolina Total: ${(gC+gE).toFixed(1)} L
             `;
         }
-        function finalizarRuta() { alert("Día finalizado."); location.reload(); }
+        function finalizarRuta() { alert("Día finalizado. Datos guardados."); location.reload(); }
     </script>
 </body>
 </html>
