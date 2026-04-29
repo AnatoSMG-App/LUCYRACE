@@ -3,80 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - MODO CRIOLLO</title>
+    <title>LUCY JHA - TAXÍMETRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         
-        /* CABECERA CENTRADA - ESTILO FINAL */
         #header { 
             position: absolute; top: 10px; width: 100%; display: flex; 
             justify-content: center; align-items: center; padding: 0 15px; 
             box-sizing: border-box; z-index: 1000; 
         }
-        #header h1 { margin: 0; font-size: 1.6em; color: #0f0; text-shadow: 0 0 10px #0f0; position: absolute; width: 100%; text-align: center; }
+        #header h1 { margin: 0; font-size: 1.4em; color: #0f0; text-shadow: 0 0 10px #0f0; position: absolute; width: 100%; text-align: center; }
         
-        /* TANQUE GIGANTE CON ALERTA ROJA */
         #tank-display-top { 
-            font-size: 4.5em; font-weight: 900; color: #0f0; text-shadow: 0 0 20px #0f0; 
-            margin-left: auto; z-index: 1001; transition: 0.3s;
+            font-size: 4em; font-weight: 900; color: #0f0; text-shadow: 0 0 20px #0f0; 
+            margin-left: auto; z-index: 1001; 
         }
         
-        /* LA ALERTA QUE ME PEDISTE */
-        .alerta-roja { 
-            color: #ff0000 !important; 
-            text-shadow: 0 0 30px #ff0000, 0 0 10px #fff !important; 
-            animation: sacudida 0.5s infinite; 
-        }
+        .alerta-roja { color: #ff0000 !important; text-shadow: 0 0 30px #ff0000 !important; animation: sacudida 0.5s infinite; }
 
         @keyframes sacudida {
             0% { transform: translate(0,0); }
-            25% { transform: translate(2px,2px); }
-            50% { transform: translate(-2px,2px); }
-            75% { transform: translate(2px,-2px); }
+            25% { transform: translate(1px,1px); }
+            50% { transform: translate(-1px,1px); }
             100% { transform: translate(0,0); }
         }
 
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        /* CALIBRACIÓN */
         #calib-container { 
-            position: absolute; top: 85px; left: 10px; z-index: 1000; 
-            background: rgba(0,0,0,0.85); padding: 10px; border-radius: 15px; border: 2px solid #0f0; 
-            display: flex; flex-direction: column; align-items: center; width: 90px;
+            position: absolute; top: 80px; left: 10px; z-index: 1000; 
+            background: rgba(0,0,0,0.85); padding: 8px; border-radius: 12px; border: 2px solid #0f0; width: 85px;
         }
-        #calib-container input { width: 65px; background: #000; color: #fff; border: 1px solid #0f0; font-size: 1.2em; text-align: center; border-radius: 5px; margin: 5px 0; }
+        #calib-container input { width: 60px; background: #000; color: #fff; border: 1px solid #0f0; font-size: 1.1em; text-align: center; margin: 5px 0; }
 
-        /* INFORME - HISTORIAL DE CONSUMO */
+        /* PANEL DE CONTROLES AJUSTADO */
+        .controls { 
+            position: absolute; bottom: 15px; left: 10px; right: 10px; 
+            background: rgba(0,0,0,0.95); padding: 15px; border-radius: 20px; z-index: 1000; border: 2px solid #0f0;
+        }
+
+        /* ESTADÍSTICAS EN LÍNEA (TRIPLE RELOJ) */
+        .stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .stat-box { text-align: center; flex: 1; }
+        .stat-label { display: block; font-size: 0.55em; color: #0f0; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+        .stat-val { font-size: 1.1em; font-weight: bold; }
+        
+        /* RESALTADO DEL DINERO */
+        #money-display { color: #ffeb3b; font-size: 1.3em; text-shadow: 0 0 5px rgba(255, 235, 59, 0.5); }
+
+        #extra-info-box { 
+            display: none; background: #ff00ea; color: #fff; padding: 6px; 
+            border-radius: 10px; margin-bottom: 10px; text-align: center; font-weight: bold; font-size: 0.8em;
+        }
+
+        button { width: 100%; padding: 16px; border: none; border-radius: 15px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
+        .btn-start { background: #0f0; color: #000; }
+        .btn-extra { background: #00fbff; color: #000; display: none; flex: 1.2; }
+        .btn-informe { background: #fff; color: #000; margin-top: 10px; border: 2px solid #0f0; height: 45px; font-size: 0.85em; }
+
+        /* PANTALLA INFORME */
         #pantalla-informe { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: #fff; color: #000; z-index: 2000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto;
         }
-        .corte-card { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-
-        .controls { 
-            position: absolute; bottom: 15px; left: 10px; right: 10px; 
-            background: rgba(0,0,0,0.95); padding: 15px; border-radius: 20px;
-            z-index: 1000; border: 2px solid #0f0;
-        }
-
-        #extra-info-box { 
-            display: none; background: #ff00ea; color: #fff; padding: 8px; 
-            border-radius: 12px; margin-bottom: 10px; text-align: center; font-weight: bold; border: 1px solid #fff;
-        }
-
-        .stats { display: flex; justify-content: space-around; margin-bottom: 10px; }
-        .stat-val { font-size: 1.2em; font-weight: bold; }
-        
-        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        button { width: 100%; padding: 16px; border: none; border-radius: 15px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
-        
-        .btn-start { background: #0f0; color: #000; }
-        .btn-extra { background: #00fbff; color: #000; display: none; flex: 1.2; }
-        .btn-informe { background: #fff; color: #000; margin-top: 10px; border: 2px solid #0f0; height: 50px; font-size: 0.9em; }
-
-        .btn-dias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
-        .btn-dias button { padding: 10px; background: #eee; font-size: 0.7em; color: #000; height: 45px; border-radius: 8px; }
+        .corte-card { padding: 12px; border-radius: 12px; margin-bottom: 10px; color: #fff; }
     </style>
 </head>
 <body>
@@ -87,52 +78,38 @@
     </div>
 
     <div id="calib-container">
-        <span style="font-size: 0.5em; color:#0f0; font-weight:bold; text-align: center;">LITROS AL LLEGAR</span>
+        <span style="font-size: 0.45em; color:#0f0; font-weight:bold;">LITROS LLEGADA</span>
         <input type="number" id="litros-llegada" value="0" step="0.1">
-        <button onclick="ejecutarCalibracion()" style="background:#0f0; border:none; border-radius:5px; font-weight:bold; width:100%; font-size:0.7em; padding:6px;">CALIBRAR ✅</button>
+        <button onclick="ejecutarCalibracion()" style="background:#0f0; border:none; border-radius:5px; font-weight:bold; width:100%; font-size:0.6em; padding:4px;">CALIBRAR</button>
     </div>
     
     <div id="pantalla-informe">
-        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; padding: 10px; margin-bottom: 15px; border-radius: 10px;">⬅ VOLVER AL MAPA</button>
-        <h2 style="text-align:center; margin-top:0;">HISTORIAL DE CONSUMO</h2>
-        
-        <div class="corte-card" style="background: #28a745;">
-            <small>CORTE 7 DÍAS (Semanal)</small>
-            <div id="c7" style="font-size: 1.3em; font-weight: bold;">0.00 km | 0.0 L</div>
-        </div>
-        <div class="corte-card" style="background: #17a2b8;">
-            <small>CORTE 15 DÍAS (Quincenal)</small>
-            <div id="c15" style="font-size: 1.3em; font-weight: bold;">0.00 km | 0.0 L</div>
-        </div>
-        <div class="corte-card" style="background: #6f42c1;">
-            <small>CORTE 30 DÍAS (Mensual)</small>
-            <div id="c30" style="font-size: 1.3em; font-weight: bold;">0.00 km | 0.0 L</div>
-        </div>
-
-        <div id="detalle-dia" style="background:#fff3cd; padding:15px; border-radius:12px; margin: 15px 0; border: 1px solid #ffeeba; font-size: 0.9em;">Selecciona un día abajo para ver el detalle.</div>
-
-        <div class="btn-dias">
-            <button onclick="verDia(this, 'Lunes')">LUN</button>
-            <button onclick="verDia(this, 'Martes')">MAR</button>
-            <button onclick="verDia(this, 'Miércoles')">MIE</button>
-            <button onclick="verDia(this, 'Jueves')">JUE</button>
-            <button onclick="verDia(this, 'Viernes')">VIE</button>
-            <button onclick="verDia(this, 'Sábado')">SAB</button>
-            <button onclick="verDia(this, 'Domingo')">DOM</button>
-        </div>
+        <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; padding: 8px; margin-bottom: 10px;">⬅ VOLVER</button>
+        <h2 style="text-align:center; margin-top:0; font-size: 1.2em;">HISTORIAL DE CONSUMO</h2>
+        <div id="cortes-container"></div> <div id="detalle-dia" style="background:#fff3cd; padding:10px; border-radius:10px; font-size:0.8em; margin: 10px 0;">Toca un día para detalle.</div>
+        <div id="botones-dias" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 5px;"></div>
     </div>
 
     <div id="map"></div>
 
     <div class="controls">
         <div id="extra-info-box">
-            EXTRA: <span id="e-dist">0.00</span> km | <span id="e-time">00:00</span>
+            EXTRA: <span id="e-dist">0.00</span> km | $ <span id="e-money">0.00</span>
         </div>
 
         <div class="stats">
-            <div class="stat-box"><span class="stat-label" style="display:block; font-size:0.6em; color:#0f0;">TIEMPO</span><span id="time" class="stat-val">00:00</span></div>
-            <div class="stat-box"><span class="stat-label" style="display:block; font-size:0.6em; color:#0f0;">DISTANCIA</span><span id="dist" class="stat-val">0.00 km</span></div>
-            <div class="stat-box"><span class="stat-label" style="display:block; font-size:0.6em; color:#0f0;">TANQUE</span><span id="fuel-bottom" class="stat-val" style="color: #0f0;">10.0 L</span></div>
+            <div class="stat-box">
+                <span class="stat-label">Tiempo</span>
+                <span id="time" class="stat-val">00:00</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Gasto $</span>
+                <span id="money-display" class="stat-val">$0.00</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Distancia</span>
+                <span id="dist" class="stat-val">0.00 km</span>
+            </div>
         </div>
 
         <div id="setup-area">
@@ -140,11 +117,11 @@
             <button class="btn-start" style="margin-top:10px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
 
-        <div class="btn-group">
-            <button id="pause-btn" style="display:none; background:#ffae00; flex:2" onclick="pausarRuta()">PAUSA ⏳</button>
+        <div class="btn-group" style="display:flex; gap:10px;">
+            <button id="pause-btn" style="display:none; background:#ffae00; flex:2" onclick="pausarRuta()">PAUSA</button>
             <button id="extra-btn" class="btn-extra" onclick="activarExtra()">EXTRA 🚀</button>
         </div>
-        <button id="stop-btn" style="display:none; background:#ff0000; color:#fff" onclick="finalizarRuta()">TERMINAR DÍA 🏁</button>
+        <button id="stop-btn" style="display:none; background:#ff0000; color:#fff; margin-top:5px;" onclick="finalizarRuta()">TERMINAR DÍA</button>
         <button class="btn-informe" onclick="abrirInforme()">VER HISTORIAL DE CONSUMO 📊</button>
     </div>
 
@@ -155,9 +132,10 @@
         let path = L.polyline([], {color: '#00fbff', weight: 6}).addTo(map);
         let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        let segs = 0, eSegs = 0, timer, watchID, lastPos = null;
+        let segs = 0, timer, watchID, lastPos = null;
         let dRuta = 0, dExtra = 0, fuelI = 10, fuelR = 10, enP = false, enE = false;
-        let factor = 0.05;
+        let factor = 0.05; // Litros por KM (Calibrable)
+        const PRECIO = 0.50;
 
         document.getElementById('fuel-slider').oninput = function() {
             fuelI = parseFloat(this.value);
@@ -166,28 +144,24 @@
         };
 
         function actualizarUI() {
-            let num = fuelR.toFixed(1);
+            document.getElementById('tank-display-top').innerText = fuelR.toFixed(1);
             let dTop = document.getElementById('tank-display-top');
-            let dBottom = document.getElementById('fuel-bottom');
-            dTop.innerText = num;
-            dBottom.innerText = num + " L";
+            
+            // Alerta Roja 4L
+            if(fuelR <= 4.0) dTop.classList.add('alerta-roja');
+            else dTop.classList.remove('alerta-roja');
 
-            // SI LLEGA A 4L O MENOS: ALERTA ROJA AGRESIVA
-            if(fuelR <= 4.0) {
-                dTop.classList.add('alerta-roja');
-                dBottom.style.color = '#ff0000';
-            } else {
-                dTop.classList.remove('alerta-roja');
-                dBottom.style.color = '#0f0';
-            }
+            let gastado = fuelI - fuelR;
+            let dolares = (gastado * PRECIO).toFixed(2);
+            document.getElementById('money-display').innerText = "$" + dolares;
+            document.getElementById('dist').innerText = dRuta.toFixed(2) + " km";
         }
 
         function ejecutarCalibracion() {
             let llegada = parseFloat(document.getElementById('litros-llegada').value);
-            let totalKm = dRuta + dExtra;
-            if(totalKm <= 0) return alert("¡Amo, ruede primero para poder sacar la cuenta!");
-            factor = (fuelI - llegada) / totalKm;
-            alert("✅ CALIBRADO: Lucy ya sabe cuánto consume tu Loncin.");
+            if(dRuta + dExtra <= 0) return alert("Rueda un poco antes.");
+            factor = (fuelI - llegada) / (dRuta + dExtra);
+            alert("✅ Calibrado.");
         }
 
         function iniciarRuta() {
@@ -195,27 +169,21 @@
             document.getElementById('pause-btn').style.display = 'block';
             document.getElementById('extra-btn').style.display = 'block';
             document.getElementById('stop-btn').style.display = 'block';
-            timer = setInterval(() => {
-                if(!enP) {
-                    if(!enE) { segs++; document.getElementById('time').innerText = fmt(segs); }
-                    else { eSegs++; document.getElementById('e-time').innerText = fmt(eSegs); }
-                }
-            }, 1000);
+            timer = setInterval(() => { if(!enP) { segs++; document.getElementById('time').innerText = fmt(segs); } }, 1000);
+            
             if(navigator.geolocation) {
                 watchID = navigator.geolocation.watchPosition(pos => {
                     if(enP) return;
-                    let lat = pos.coords.latitude, lon = pos.coords.longitude;
                     if(lastPos) {
-                        let d = 0.05; // Simulación de avance
+                        let d = 0.03; // Simulación de avance
                         fuelR -= (d * factor);
-                        if(!enE) { dRuta += d; document.getElementById('dist').innerText = dRuta.toFixed(2) + " km"; }
-                        else { dExtra += d; document.getElementById('e-dist').innerText = dExtra.toFixed(2); }
+                        if(!enE) dRuta += d; else dExtra += d;
                         actualizarUI();
                     }
-                    lastPos = {lat, lon};
-                    marker.setLatLng([lat, lon]);
-                    path.addLatLng([lat, lon]);
-                    map.panTo([lat, lon]);
+                    lastPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+                    marker.setLatLng([lastPos.lat, lastPos.lon]);
+                    path.addLatLng([lastPos.lat, lastPos.lon]);
+                    map.panTo([lastPos.lat, lastPos.lon]);
                 }, null, {enableHighAccuracy: true});
             }
         }
@@ -229,24 +197,14 @@
 
         function pausarRuta() {
             enP = !enP;
-            if(enP && lastPos) {
-                let n = prompt("Nombre de la parada:");
-                if(n) L.marker([lastPos.lat, lastPos.lon]).addTo(map).bindPopup(n).openPopup();
-            }
-            document.getElementById('pause-btn').innerText = enP ? "REANUDAR ▶️" : "PAUSA ⏳";
+            document.getElementById('pause-btn').innerText = enP ? "CONTINUAR" : "PAUSA";
         }
 
         function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); }
 
-        function verDia(btn, dia) {
-            document.querySelectorAll('.btn-dias button').forEach(b => b.style.background = '#eee');
-            btn.style.background = '#0f0';
-            document.getElementById('detalle-dia').innerHTML = `<b>DETALLE DEL ${dia.toUpperCase()}:</b><br>🛣️ Ruta Cliente: ${dRuta.toFixed(2)} km<br>🚀 Ruta Extra: ${dExtra.toFixed(2)} km<br>⛽ Gasolina gastada: ${(fuelI - fuelR).toFixed(1)} L`;
-        }
-
-        function finalizarRuta() { alert("¡Día terminado! Datos guardados en el historial."); location.reload(); }
         function abrirInforme() { document.getElementById('pantalla-informe').style.display = 'block'; }
         function cerrarInforme() { document.getElementById('pantalla-informe').style.display = 'none'; }
+        function finalizarRuta() { alert("Día finalizado."); location.reload(); }
     </script>
 </body>
 </html>
