@@ -3,19 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V2.1</title>
+    <title>LUCY JHA - PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
-        #header { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 1000; }
-        #header h1 { margin: 0; font-size: 2.2em; color: #0f0; text-shadow: 0 0 15px #0f0; }
         
+        /* Cabecera con LUCY y TANQUE GIGANTE */
+        #header { 
+            position: absolute; top: 10px; width: 100%; display: flex; 
+            justify-content: space-between; align-items: center; padding: 0 15px; 
+            box-sizing: border-box; z-index: 1000; 
+        }
+        #header h1 { margin: 0; font-size: 1.8em; color: #0f0; text-shadow: 0 0 10px #0f0; }
+        #tank-display-top { font-size: 3.5em; font-weight: bold; color: #0f0; text-shadow: 0 0 15px #0f0; }
+
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
+        /* Calibración arriba izquierda */
+        #calib-container { 
+            position: absolute; top: 80px; left: 15px; z-index: 1000; 
+            background: rgba(0,0,0,0.8); padding: 8px; border-radius: 10px; border: 1px solid #0f0; 
+        }
+
         #pantalla-informe { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: #fff; color: #000; z-index: 2000; display: none; padding: 20px; box-sizing: border-box;
-            overflow-y: auto;
         }
 
         .controls { 
@@ -24,13 +36,10 @@
             z-index: 1000; border: 2px solid #0f0;
         }
 
-        /* Calibración arriba a la izquierda */
-        #calib-container { position: absolute; top: 60px; left: 15px; z-index: 1000; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 10px; border: 1px solid #0f0; }
-
-        .stats { display: flex; justify-content: space-around; margin-bottom: 10px; align-items: center;}
+        .stats { display: flex; justify-content: space-around; margin-bottom: 10px; }
         .stat-box { text-align: center; }
         .stat-label { font-size: 0.7em; color: #0f0; font-weight: bold; }
-        .stat-val { font-size: 1.4em; font-weight: bold; display: block; }
+        .stat-val { font-size: 1.2em; font-weight: bold; }
         
         .btn-group { display: flex; gap: 8px; margin-bottom: 8px; }
         button { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
@@ -38,39 +47,37 @@
         .btn-start { background: #0f0; color: #000; }
         .btn-pause { background: #ffae00; color: #000; display: none; flex: 2; }
         .btn-extra { background: #00fbff; color: #000; display: none; flex: 1; }
-        .btn-stop { background: #ff0000; color: #fff; display: none; margin-top: 5px; }
+        .btn-stop { background: #ff0000; color: #fff; display: none; }
         .btn-informe { background: #fff; color: #000; margin-top: 8px; border: 2px solid #0f0; }
 
         .btn-dias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 20px; }
-        .btn-dias button { padding: 12px; font-size: 0.9em; background: #ddd; }
+        .btn-dias button { padding: 10px; background: #ddd; }
     </style>
 </head>
 <body>
 
-    <div id="header"><h1>LUCY JHA</h1></div>
+    <div id="header">
+        <h1>LUCY JHA</h1>
+        <div id="tank-display-top">10.0L</div>
+    </div>
 
     <div id="calib-container">
-        <span style="font-size: 0.7em; color:#0f0; display:block; font-weight:bold;">CALIBRAR (-)</span>
-        <input type="number" id="calib-neg" value="0" step="0.5" style="width:70px; background:#000; color:#fff; border:1px solid #0f0; font-size:1.2em; text-align:center;">
+        <span style="font-size: 0.6em; color:#0f0; display:block; font-weight:bold;">CALIBRAR (-)</span>
+        <input type="number" id="calib-neg" value="0" step="0.5" style="width:65px; background:#000; color:#fff; border:1px solid #0f0; font-size:1.1em; text-align:center;">
     </div>
     
     <div id="pantalla-informe">
-        <button onclick="cerrarInforme()" style="background:#000; color:#fff;">⬅ VOLVER AL MAPA</button>
-        <h2 style="text-align:center">INFORMES DE RUTA</h2>
-        <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left: 5px solid #0f0;">
-            <p><b>7 DÍAS:</b> <span id="inf-7">0.00 km | 0 L | 0 $</span></p>
-            <p><b>15 DÍAS:</b> <span id="inf-15">0.00 km | 0 L | 0 $</span></p>
-            <p><b>30 DÍAS:</b> <span id="inf-30">0.00 km | 0 L | 0 $</span></p>
+        <button onclick="cerrarInforme()" style="background:#000; color:#fff;">⬅ VOLVER</button>
+        <h2 style="text-align:center">RESUMEN</h2>
+        <div id="resumen-data" style="background:#f0f0f0; padding:15px; border-radius:10px;">
+            <p><b>7 DÍAS:</b> <span id="inf-7">0 km | 0 L</span></p>
+            <p><b>15 DÍAS:</b> <span id="inf-15">0 km | 0 L</span></p>
         </div>
-
         <div class="btn-dias">
-            <button onclick="marcarDia(this, '#007bff')">LUN</button>
-            <button onclick="marcarDia(this, '#28a745')">MAR</button>
-            <button onclick="marcarDia(this, '#dc3545')">MIE</button>
-            <button onclick="marcarDia(this, '#ffc107')">JUE</button>
-            <button onclick="marcarDia(this, '#17a2b8')">VIE</button>
-            <button onclick="marcarDia(this, '#6610f2')">SAB</button>
-            <button onclick="marcarDia(this, '#fd7e14')">DOM</button>
+            <button onclick="this.style.background='#007bff'">LUN</button>
+            <button onclick="this.style.background='#28a745'">MAR</button>
+            <button onclick="this.style.background='#dc3545'">MIE</button>
+            <button onclick="this.style.background='#ffc107'">JUE</button>
         </div>
     </div>
 
@@ -80,11 +87,11 @@
         <div class="stats">
             <div class="stat-box"><span class="stat-label">TIEMPO</span><span id="time" class="stat-val">00:00</span></div>
             <div class="stat-box"><span class="stat-label">DISTANCIA</span><span id="dist" class="stat-val">0.00 km</span></div>
-            <div class="stat-box"><span class="stat-label">TANQUE</span><span id="fuel" class="stat-val" style="color: #0f0; font-size: 1.8em !important;">10.0 L</span></div>
+            <div class="stat-box"><span class="stat-label">TANQUE</span><span id="fuel-bottom" class="stat-val" style="color: #0f0;">10.0 L</span></div>
         </div>
 
         <div id="setup-area">
-            <label style="display:block; text-align:center; font-weight:bold; margin-bottom:5px;">SALIDA: <span id="fuel-val">10.0</span> L</label>
+            <label style="display:block; text-align:center; font-weight:bold;">SALIDA: <span id="fuel-val">10.0</span> L</label>
             <input type="range" id="fuel-slider" min="0" max="15" step="0.5" value="10" style="width:100%; accent-color:#0f0;">
             <button class="btn-start" style="margin-top:10px" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
         </div>
@@ -108,10 +115,13 @@
         let segs = 0, timer, watchID, lastPos = null, totalDist = 0;
         let fuelRestante = 10, enPausa = false, enModoExtra = false;
 
+        // Sincronización de tanques
         document.getElementById('fuel-slider').oninput = function() {
             fuelRestante = parseFloat(this.value);
+            let txt = fuelRestante.toFixed(1) + "L";
             document.getElementById('fuel-val').innerText = fuelRestante.toFixed(1);
-            document.getElementById('fuel').innerText = fuelRestante.toFixed(1) + " L";
+            document.getElementById('tank-display-top').innerText = txt;
+            document.getElementById('fuel-bottom').innerText = txt;
         };
 
         function iniciarRuta() {
@@ -120,8 +130,6 @@
             document.getElementById('extra-btn').style.display = 'block';
             document.getElementById('stop-btn').style.display = 'block';
             
-            // RELOJ (Arreglado)
-            if (timer) clearInterval(timer);
             timer = setInterval(() => {
                 if(!enPausa) {
                     segs++;
@@ -136,12 +144,13 @@
                     if(enPausa) return;
                     let lat = pos.coords.latitude, lon = pos.coords.longitude;
                     if(lastPos) {
-                        // Cálculo real en movimiento
-                        let d = 0.02; // Simulación para pruebas
+                        let d = 0.01; // Esto se moverá con el GPS real
                         totalDist += d;
-                        fuelRestante -= (d * 0.05); // Consumo estimado
+                        fuelRestante -= (d * 0.05); // Aquí está tu consumo base
                         document.getElementById('dist').innerText = totalDist.toFixed(2) + " km";
-                        document.getElementById('fuel').innerText = Math.max(0, fuelRestante).toFixed(1) + " L";
+                        let txt = Math.max(0, fuelRestante).toFixed(1) + "L";
+                        document.getElementById('tank-display-top').innerText = txt;
+                        document.getElementById('fuel-bottom').innerText = txt;
                     }
                     lastPos = {lat, lon};
                     marker.setLatLng([lat, lon]);
@@ -153,31 +162,24 @@
 
         function pausarRuta() {
             enPausa = !enPausa;
-            let btn = document.getElementById('pause-btn');
-            btn.innerText = enPausa ? "REANUDAR ▶️" : "PAUSA ⏳";
-            btn.style.background = enPausa ? "#0f0" : "#ffae00";
+            if(enPausa) {
+                let nombre = prompt("¿Dónde estás? (Ej: Casa de Jorge)");
+                if(nombre) L.marker([lastPos.lat, lastPos.lon]).addTo(map).bindPopup(nombre).openPopup();
+            }
+            document.getElementById('pause-btn').innerText = enPausa ? "REANUDAR ▶️" : "PAUSA ⏳";
+            document.getElementById('pause-btn').style.background = enPausa ? "#0f0" : "#ffae00";
         }
 
         function activarExtra() {
             enModoExtra = !enModoExtra;
-            let btn = document.getElementById('extra-btn');
-            btn.style.background = enModoExtra ? "#ff00ea" : "#00fbff";
-            btn.innerText = enModoExtra ? "EXTRA ON" : "EXTRA";
-        }
-
-        function marcarDia(btn, color) {
-            document.querySelectorAll('.btn-dias button').forEach(b => {
-                b.style.background = '#ddd';
-                b.style.color = '#000';
-            });
-            btn.style.background = color;
-            btn.style.color = '#fff';
+            document.getElementById('extra-btn').style.background = enModoExtra ? "#ff00ea" : "#00fbff";
+            document.getElementById('extra-btn').innerText = enModoExtra ? "EXTRA ON" : "EXTRA";
         }
 
         function finalizarRuta() {
             clearInterval(timer);
             navigator.geolocation.clearWatch(watchID);
-            alert("Ruta terminada. Datos guardados localmente.");
+            alert("Ruta terminada. Revisa los informes.");
             location.reload(); 
         }
 
