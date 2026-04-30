@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9.2 - PROTOCOLO MURACHI (GOOGLE EDITION)</title>
+    <title>LUCY ANATO V5.9.2 - PROTOCOLO MURACHI</title>
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
@@ -20,14 +20,13 @@
         .unit-small { font-size: 0.5em; color: #aaa; margin-left: 2px; }
         .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
 
-        /* Barras de Resumen */
+        /* Resumen */
         .mini-resumen-container { margin-bottom: 15px; display: flex; flex-direction: column; gap: 4px; }
         .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 4px 8px; font-size: 0.65em; }
-        .barra-resumen b { color: #0f0; font-size: 1.1em; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; text-align: center; margin-top: 2px; }
         .btn-reset-bar { float: right; color: #f00; font-weight: 900; cursor: pointer; border: 1px solid #f00; padding: 0 4px; border-radius: 3px; }
 
-        /* Extra Flotante fucsia */
+        /* Extra Fucsia */
         #extra-float { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
         .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
 
@@ -41,7 +40,7 @@
 
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
         .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; position: relative; }
-        .btn-del { position: absolute; right: 10px; top: 10px; font-size: 1.2em; color: #f00; }
+        .btn-del { position: absolute; right: 10px; top: 10px; font-size: 1.2em; color: #f00; cursor: pointer; }
         .btn-close { background: #f00; color: #fff; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; border: none; margin-top: 10px; }
     </style>
 </head>
@@ -63,7 +62,7 @@
         <div class="row-panels">
             <div class="panel-data" style="border-color: #fff;">
                 <span class="txt-label">⏱️ <span id="val-time">00:00:00</span></span>
-                <span class="val-big" id="val-km" onclick="ajusteManualKM()">0.000<span class="unit-small">KM</span></span>
+                <span class="val-big" id="val-km">0.000<span class="unit-small">KM</span></span>
                 <div style="display:flex; justify-content: space-between; margin-top:5px;">
                     <span id="val-gas-trip" style="color:#00ffff; font-weight:bold; font-size:0.8em;">0.000 L</span>
                     <span id="val-money-route" style="color:#0f0; font-weight:bold; font-size:0.8em;">$0.00</span>
@@ -80,7 +79,6 @@
     <div class="side-hud">
         <div class="hud-btn" onclick="abrirHistorial()">📊</div>
         <div class="hud-btn" id="btn-extra" onclick="toggleExtra()">🚀</div>
-        <div class="hud-btn" onclick="abrirGPS()">📍</div>
         <div class="hud-btn" onclick="abrirCalibrar()">🔧</div>
         <div class="hud-btn" onclick="location.reload()" style="border-color:#f00;">🔄</div>
     </div>
@@ -92,38 +90,7 @@
 
     <div id="pantalla-historial" class="full-modal">
         <h2 style="color:#0f0; border-bottom: 2px solid #0f0; font-size:1.2em;">📊 REGISTRO Y RESUMEN</h2>
-        <div class="mini-resumen-container">
-            <div class="barra-resumen">
-                <span class="btn-reset-bar" onclick="resetAcumulado('siete')">RESET</span>
-                <b style="color:#fff">RESUMEN 7 DÍAS:</b>
-                <div class="grid-4-jinetes">
-                    <div>KM<br><b id="res-7-km">0.000</b></div>
-                    <div>TIME<br><b id="res-7-time">00:00</b></div>
-                    <div>GAS<br><b id="res-7-gas">0.000</b></div>
-                    <div>USD<br><b id="res-7-money">$0.00</b></div>
-                </div>
-            </div>
-            <div class="barra-resumen">
-                <span class="btn-reset-bar" onclick="resetAcumulado('quince')">RESET</span>
-                <b style="color:#fff">RESUMEN 15 DÍAS:</b>
-                <div class="grid-4-jinetes">
-                    <div>KM<br><b id="res-15-km">0.000</b></div>
-                    <div>TIME<br><b id="res-15-time">00:00</b></div>
-                    <div>GAS<br><b id="res-15-gas">0.000</b></div>
-                    <div>USD<br><b id="res-15-money">$0.00</b></div>
-                </div>
-            </div>
-            <div class="barra-resumen">
-                <span class="btn-reset-bar" onclick="resetAcumulado('mes')">RESET</span>
-                <b style="color:#fff">RESUMEN 30 DÍAS:</b>
-                <div class="grid-4-jinetes">
-                    <div>KM<br><b id="res-30-km">0.000</b></div>
-                    <div>TIME<br><b id="res-30-time">00:00</b></div>
-                    <div>GAS<br><b id="res-30-gas">0.000</b></div>
-                    <div>USD<br><b id="res-30-money">$0.00</b></div>
-                </div>
-            </div>
-        </div>
+        <div class="mini-resumen-container" id="resumen-capsulas"></div>
         <div id="lista-registros"></div>
         <button class="btn-close" onclick="cerrarModales()">VOLVER AL MAPA</button>
     </div>
@@ -143,7 +110,6 @@
         <button class="btn-close" onclick="cerrarModales()">CERRAR</button>
     </div>
 
-    <!-- API GOOGLE MAPS -->
     <script src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY_AQUI&callback=initMap" async defer></script>
 
     <script>
@@ -158,34 +124,12 @@
         let estado = "parado", extraActivo = false, clienteActual = "Sin Nombre";
         let dTotal = 0, dExtra = 0, tTotal = 0, tExtra = 0, cronoMaestro;
 
-        // --- INICIALIZACIÓN DE GOOGLE MAPS ---
         function initMap() {
             map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 16,
-                center: { lat: 10.174, lng: -67.915 }, // Los Guayos
-                disableDefaultUI: true,
-                styles: [
-                    { elementType: "geometry", stylers: [{ color: "#212121" }] },
-                    { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
-                    { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
-                    { featureType: "road", elementType: "geometry", stylers: [{ color: "#484848" }] },
-                    { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
-                ]
+                zoom: 16, center: { lat: 10.174, lng: -67.915 }, disableDefaultUI: true,
+                styles: [{elementType: "geometry", stylers: [{color: "#212121"}]}, {featureType: "road", elementType: "geometry", stylers: [{color: "#484848"}]}]
             });
-
-            marker = new google.maps.Marker({
-                position: { lat: 0, lng: 0 },
-                map: map,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 9,
-                    fillColor: "#0f0",
-                    fillOpacity: 1,
-                    strokeWeight: 2,
-                    strokeColor: "#fff"
-                }
-            });
-
+            marker = new google.maps.Marker({ position: {lat:0, lng:0}, map: map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#0f0", fillOpacity: 1, strokeWeight: 2, strokeColor: "#fff"}});
             iniciarSeguimientoGPS();
         }
 
@@ -193,14 +137,9 @@
             navigator.geolocation.watchPosition(pos => {
                 let p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 marker.setPosition(p);
-                
                 if(estado === "rodando" && ultimaPos){
-                    let dist = google.maps.geometry.spherical.computeDistanceBetween(
-                        new google.maps.LatLng(ultimaPos.lat, ultimaPos.lng),
-                        new google.maps.LatLng(p.lat, p.lng)
-                    ) / 1000;
-
-                    if(dist > 0.0005){ // Filtro antiruido
+                    let dist = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(ultimaPos.lat, ultimaPos.lng), new google.maps.LatLng(p.lat, p.lng)) / 1000;
+                    if(dist > 0.0005){
                         dTotal += dist;
                         if(extraActivo) dExtra += dist;
                         DB.fuel -= (dist * DB.factor);
@@ -232,18 +171,30 @@
                 let cEx = dExtra * DB.factor;
                 document.getElementById('ex-gas').innerText = cEx.toFixed(3);
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
-            } else {
-                document.getElementById('extra-float').style.display = 'none';
-            }
+            } else { document.getElementById('extra-float').style.display = 'none'; }
 
-            ['siete', 'quince', 'mes'].forEach(periodo => {
-                document.getElementById(`res-${periodo}-km`).innerText = DB[periodo].km.toFixed(3);
-                document.getElementById(`res-${periodo}-time`).innerText = formatTime(DB[periodo].time).substring(0,5);
-                document.getElementById(`res-${periodo}-gas`).innerText = DB[periodo].gas.toFixed(3);
-                document.getElementById(`res-${periodo}-money`).innerText = "$" + DB[periodo].money.toFixed(2);
-            });
-
+            renderResumen();
             localStorage.setItem('lucy_v59', JSON.stringify(DB));
+        }
+
+        function renderResumen(){
+            const capsulas = [
+                { id: 'siete', titulo: '7 DÍAS' },
+                { id: 'quince', titulo: '15 DÍAS' },
+                { id: 'mes', titulo: '30 DÍAS' }
+            ];
+            document.getElementById('resumen-capsulas').innerHTML = capsulas.map(c => `
+                <div class="barra-resumen">
+                    <span class="btn-reset-bar" onclick="resetAcumulado('${c.id}')">RESET</span>
+                    <b style="color:#fff">RESUMEN ${c.titulo}:</b>
+                    <div class="grid-4-jinetes">
+                        <div>KM<br><b>${DB[c.id].km.toFixed(3)}</b></div>
+                        <div>TIME<br><b>${formatTime(DB[c.id].time).substring(0,5)}</b></div>
+                        <div>GAS<br><b>${DB[c.id].gas.toFixed(3)}</b></div>
+                        <div>USD<br><b>$${DB[c.id].money.toFixed(2)}</b></div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function controlRuta(){
@@ -253,9 +204,7 @@
                 document.getElementById('btn-main').className = "btn-main btn-stop";
                 document.getElementById('btn-pause').style.display = "block";
                 iniciarCronometro();
-            } else {
-                if(confirm("¿Cerrar ruta de " + clienteActual + "?")){ finalizarYGuardar(); }
-            }
+            } else { if(confirm("¿Cerrar ruta?")) finalizarYGuardar(); }
         }
 
         function pausarRuta(){
@@ -263,26 +212,15 @@
                 estado = "pausado";
                 document.getElementById('btn-pause').innerText = "REANUDAR ▶";
                 let n = prompt("Nombre del Cliente:", clienteActual);
-                if(n) {
-                    clienteActual = n;
+                if(n) { 
+                    clienteActual = n; 
                     document.getElementById('ex-nombre').innerText = n.toUpperCase();
-                    if(ultimaPos) {
-                        new google.maps.InfoWindow({
-                            content: `<b>${n}</b>`
-                        }).open(map, new google.maps.Marker({ position: ultimaPos, map: map }));
-                    }
+                    new google.maps.InfoWindow({content: `<b>${n}</b>`}).open(map, new google.maps.Marker({position: ultimaPos, map: map}));
                 }
-            } else {
-                estado = "rodando";
-                document.getElementById('btn-pause').innerText = "PAUSA ⏸";
-            }
+            } else { estado = "rodando"; document.getElementById('btn-pause').innerText = "PAUSA ⏸"; }
         }
 
-        function toggleExtra(){
-            extraActivo = !extraActivo;
-            document.getElementById('btn-extra').style.background = extraActivo ? '#f0f' : '#111';
-            actualizarUI();
-        }
+        function toggleExtra(){ extraActivo = !extraActivo; document.getElementById('btn-extra').style.background = extraActivo ? '#f0f' : '#111'; actualizarUI(); }
 
         function iniciarCronometro(){
             if(cronoMaestro) clearInterval(cronoMaestro);
@@ -296,31 +234,13 @@
         function finalizarYGuardar(){
             let cTotal = dTotal * DB.factor;
             let mTotal = cTotal * 0.5;
-            
-            let reg = {
-                cliente: clienteActual, 
-                fecha: new Date().toLocaleString(),
-                km: dTotal.toFixed(3), 
-                time: formatTime(tTotal), 
-                gas: cTotal.toFixed(3), 
-                money: mTotal.toFixed(2),
-                extra: {
-                    km: dExtra.toFixed(3), 
-                    time: formatTime(tExtra).substring(3),
-                    gas: (dExtra * DB.factor).toFixed(3),
-                    money: (dExtra * DB.factor * 0.5).toFixed(2)
-                }
-            };
-            DB.registros.unshift(reg);
-
-            // SOLDADURA MAESTRA DEL TIEMPO
-            [DB.siete, DB.quince, DB.mes].forEach(obj => {
-                obj.km += dTotal;
-                obj.time += tTotal; // Cable del tiempo conectado
-                obj.gas += cTotal;
-                obj.money += mTotal;
+            DB.registros.unshift({
+                cliente: clienteActual, fecha: new Date().toLocaleString(),
+                km: dTotal.toFixed(3), time: formatTime(tTotal), gas: cTotal.toFixed(3), money: mTotal.toFixed(2)
             });
-
+            [DB.siete, DB.quince, DB.mes].forEach(obj => {
+                obj.km += dTotal; obj.time += tTotal; obj.gas += cTotal; obj.money += mTotal;
+            });
             resetTodo();
         }
 
@@ -335,29 +255,28 @@
         }
 
         function formatTime(s){
-            let h = Math.floor(s / 3600);
-            let m = Math.floor((s % 3600) / 60);
-            let sec = s % 60;
+            let h = Math.floor(s / 3600); let m = Math.floor((s % 3600) / 60); let sec = s % 60;
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
         function abrirHistorial(){
-            let list = document.getElementById('lista-registros');
-            list.innerHTML = DB.registros.map((r, i) => `
+            document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span class="btn-del" onclick="borrarRegistro(${i})">🗑️</span>
-                    <b>${r.cliente}</b> <small style="color:#666;">${r.fecha}</small>
-                    <div class="grid-4-jinetes" style="margin-top:8px; border-top:1px solid #333; padding-top:5px;">
+                    <b>${r.cliente}</b> <small>${r.fecha}</small>
+                    <div class="grid-4-jinetes">
                         <div>KM<br><b>${r.km}</b></div>
-                        <div>TIME<br><b>${r.time.substring(0,5)}</b></div>
+                        <div>TIME<br><b>${r.time}</b></div>
                         <div>GAS<br><b>${r.gas}L</b></div>
-                        <div>USD<br><b style="color:#0f0;">$${r.money}</b></div>
+                        <div>USD<br><b>$${r.money}</b></div>
                     </div>
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
+        function borrarRegistro(i){ if(confirm("¿Borrar?")){ DB.registros.splice(i,1); abrirHistorial(); actualizarUI(); }}
+        function resetAcumulado(p){ if(confirm("¿Resetear acumulado?")){ DB[p] = {km:0, time:0, gas:0, money:0}; actualizarUI(); }}
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function abrirFuelModal(){ document.getElementById('modal-fuel').style.display = 'block'; }
         function guardarFuel(){ DB.fuel = parseFloat(document.getElementById('input-fuel').value); cerrarModales(); actualizarUI(); }
