@@ -3,107 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V4.0 HUD</title>
+    <title>LUCY JHA - V4.2 HUD</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        /* PANELES SUPERIORES (FIJOS) */
+        /* PANELES SUPERIORES */
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; z-index: 1000; pointer-events: none; }
-        .panel-data { background: rgba(0,0,0,0.85); border: 2px solid #0f0; border-radius: 15px; padding: 10px; pointer-events: auto; min-width: 120px; }
-        .panel-gas { border-color: #0f0; text-align: right; }
-        .panel-ruta { border-color: #ffae00; }
-        
-        .val-big { font-size: 2.2em; font-weight: 900; line-height: 1; display: block; }
-        .unit-small { font-size: 0.4em; color: #0f0; vertical-align: middle; }
-        .txt-label { font-size: 0.6em; font-weight: bold; color: #ccc; text-transform: uppercase; display: block; }
+        .panel-data { background: rgba(0,0,0,0.85); border: 2px solid #0f0; border-radius: 15px; padding: 10px; pointer-events: auto; min-width: 120px; box-shadow: 0 0 15px rgba(0,255,0,0.2); }
+        .val-big { font-size: 1.8em; font-weight: 900; line-height: 1; display: block; color: #0f0; }
+        .unit-small { font-size: 0.5em; margin-left: 3px; }
+        .txt-label { font-size: 0.6em; font-weight: bold; color: #aaa; text-transform: uppercase; display: block; }
 
-        /* COLUMNA FLOTANTE IZQUIERDA */
-        .side-hud { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); display: flex; flexDirection: column; gap: 15px; z-index: 2000; }
+        /* HUD LATERAL BAJO (Ergonómico) */
+        .side-hud { position: absolute; left: 15px; bottom: 100px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
         .hud-btn-container { display: flex; align-items: center; position: relative; }
-        .hud-btn { width: 55px; height: 55px; background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5em; cursor: pointer; transition: 0.3s; box-shadow: 0 0 10px rgba(0,255,0,0.3); }
-        .hud-expand { position: absolute; left: 65px; background: rgba(0,0,0,0.95); border: 2px solid #0f0; border-radius: 15px; padding: 10px; display: none; min-width: 180px; flex-direction: column; gap: 10px; }
+        .hud-btn { width: 50px; height: 50px; background: #000; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3em; cursor: pointer; box-shadow: 0 0 10px #0f04; transition: 0.2s; }
+        .hud-btn:active { transform: scale(0.9); }
+        .hud-expand { position: absolute; left: 60px; background: rgba(0,0,0,0.95); border: 2px solid #0f0; border-radius: 15px; padding: 12px; display: none; min-width: 200px; flex-direction: column; gap: 8px; box-shadow: 5px 5px 15px #000; }
         
-        /* BOTONES DE ABAJO */
-        .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; display: flex; gap: 10px; z-index: 1000; }
-        .btn-main { flex: 1; padding: 15px; border-radius: 20px; border: none; font-weight: bold; font-size: 1em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        /* PANEL EXTRA FLOTANTE */
+        #panel-extra-data { position: absolute; top: 120px; left: 10px; background: rgba(255, 0, 234, 0.2); border: 2px solid #ff00ea; display: none; }
+
+        /* CONTROLES ABAJO */
+        .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; display: flex; gap: 10px; z-index: 1000; }
+        .btn-main { flex: 1; padding: 18px; border-radius: 20px; border: none; font-weight: bold; font-size: 1.1em; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .btn-rodar { background: #0f0; color: #000; }
+        .btn-stop { background: #f00; color: #fff; }
         .btn-marker { background: #ffae00; color: #000; }
 
-        /* MODALES */
-        .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        .modal-box { background: #111; border: 2px solid #0f0; padding: 25px; border-radius: 25px; width: 85%; max-width: 400px; text-align: center; }
-        input { width: 90%; padding: 12px; background: #000; color: #0f0; border: 1px solid #0f0; font-size: 1.1em; border-radius: 10px; margin: 15px 0; outline: none; }
+        /* HISTORIAL ESTILO V3.2 */
+        #pantalla-historial { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 4000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
+        .resumen-card { background: #111; border: 2px solid #0f0; border-radius: 20px; padding: 15px; margin-bottom: 20px; text-align: center; }
+        .tab-resumen { display: flex; justify-content: space-around; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; color: #666; font-weight: bold; cursor: pointer; }
+        .tab-btn.active { color: #0f0; text-decoration: underline; }
+        .card-hist { background: #151515; border-radius: 15px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #ffae00; }
         
-        /* HISTORIAL */
-        #pantalla-historial { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 4000; display: none; padding: 20px; overflow-y: auto; }
-        .card-hist { background: #1a1a1a; color: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid #0f0; }
-
-        .palpitante { animation: pulso 0.6s infinite; color: #f00 !important; }
-        @keyframes pulso { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-box { background: #111; border: 2px solid #0f0; padding: 20px; border-radius: 25px; width: 80%; }
+        input { width: 100%; padding: 12px; background: #000; color: #0f0; border: 1px solid #333; border-radius: 10px; margin: 10px 0; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
 
-    <!-- PANELES DE DATOS SUPERIORES -->
     <div class="top-panels">
-        <div class="panel-data panel-ruta">
-            <span class="txt-label">Ruta Actual</span>
-            <span class="val-big" id="val-km">0.00<span class="unit-small">KM</span></span>
-            <span class="txt-label" id="val-time">00:00</span>
+        <div class="panel-data" style="border-color: #ffae00;">
+            <span class="txt-label">📍 Servicio Actual</span>
+            <span class="val-big" id="val-km" style="color:#ffae00">0.0<span class="unit-small">KM</span></span>
+            <span id="val-time" style="font-size:0.8em; color:#888">00:00:00</span>
         </div>
-        <div class="panel-data panel-gas">
-            <span class="txt-label">Gasolina</span>
+        <div class="panel-data" id="panel-extra-data">
+            <span class="txt-label" style="color:#ff00ea">🚀 MODO EXTRA</span>
+            <span class="val-big" id="ex-km" style="color:#ff00ea">0.0<span class="unit-small">KM</span></span>
+            <span id="ex-money" style="font-size:0.8em; color:#ff00ea">$0.00</span>
+        </div>
+        <div class="panel-data">
+            <span class="txt-label">⛽ Combustible</span>
             <span class="val-big" id="val-fuel">10.0<span class="unit-small">L</span></span>
-            <span class="txt-label" id="val-money">$0.00</span>
+            <span id="val-money" style="font-size:0.8em; color:#0f0">$0.00</span>
         </div>
     </div>
 
-    <!-- HUD FLOTANTE IZQUIERDO -->
     <div class="side-hud">
         <div class="hud-btn-container">
-            <div class="hud-btn" onclick="toggleExpand('exp-wa')">📍</div>
+            <div class="hud-btn" onclick="toggleExpand('exp-wa')">📲</div>
             <div class="hud-expand" id="exp-wa">
-                <span class="txt-label">Ubicación WhatsApp</span>
-                <input type="text" id="input-wa" placeholder="Pega link aquí...">
-                <button class="btn-rodar" onclick="trazarWhatsApp()" style="padding:8px">TRAZAR RUTA</button>
-            </div>
-        </div>
-        <div class="hud-btn-container">
-            <div class="hud-btn" onclick="toggleExpand('exp-calib')">🔧</div>
-            <div class="hud-expand" id="exp-calib">
-                <span class="txt-label">Calibrar Litros</span>
-                <input type="number" id="input-llegada" step="0.1" placeholder="Litros al llegar">
-                <button class="btn-rodar" onclick="ejecutarCalibracion()" style="padding:8px">CALIBRAR</button>
+                <span class="txt-label">Ruta desde WhatsApp</span>
+                <input type="text" id="input-wa" placeholder="Pega link de ubicación...">
+                <button class="btn-rodar" onclick="alert('Calculando ruta...')">TRAZAR DESTINO</button>
             </div>
         </div>
         <div class="hud-btn" onclick="abrirHistorial()">📊</div>
-        <div class="hud-btn" onclick="activarExtra()" id="btn-extra-hud">🚀</div>
+        <div class="hud-btn" id="btn-extra" onclick="toggleExtra()">🚀</div>
     </div>
 
-    <!-- CONTROLES PRINCIPALES ABAJO -->
     <div class="bottom-controls">
-        <button id="main-action" class="btn-main btn-rodar" onclick="iniciarRuta()">¡A RODAR! 🏍️</button>
-        <button id="mark-btn" class="btn-main btn-marker" onclick="abrirModalNombre()" style="display:none;">MARCAR 📍</button>
+        <button id="main-action" class="btn-main btn-rodar" onclick="gestionarRuta()">¡HOLA, AMO! 🏍️</button>
+        <button id="mark-btn" class="btn-main btn-marker" onclick="abrirModal()" style="display:none;">MARCAR 📍</button>
     </div>
 
-    <!-- MODAL NOMBRE CLIENTE -->
+    <!-- MODAL NOMBRE -->
     <div id="modal-nombre" class="full-modal">
         <div class="modal-box">
-            <h3 style="color:#0f0; margin:0;">NOMBRE DEL CLIENTE</h3>
-            <input type="text" id="input-nombre" placeholder="Nombre o Negocio...">
-            <button class="btn-rodar" onclick="confirmarPunto()" style="width:100%; padding:15px">GUARDAR PUNTO ✅</button>
-            <button onclick="cerrarModales()" style="background:none; color:#f00; border:none; margin-top:15px; cursor:pointer;">Cancelar</button>
+            <h3 style="margin:0; color:#0f0">CLIENTE / NEGOCIO</h3>
+            <input type="text" id="input-nombre" placeholder="Ej: Aire 8000 BTU - Juan">
+            <button class="btn-rodar" style="width:100%; padding:15px" onclick="guardarPunto()">GUARDAR SERVICIO ✅</button>
         </div>
     </div>
 
     <!-- PANTALLA HISTORIAL -->
     <div id="pantalla-historial">
-        <button onclick="cerrarHistorial()" style="background:#000; color:#fff; border-radius:10px; padding:10px 20px;">⬅ VOLVER</button>
-        <h2 style="margin-top:20px;">HISTORIAL DE TRABAJO</h2>
+        <button onclick="cerrarHistorial()" style="background:#222; color:#fff; border:none; padding:12px; border-radius:10px; width:100%">⬅ REGRESAR AL MAPA</button>
+        
+        <div class="resumen-card">
+            <div class="tab-resumen">
+                <button class="tab-btn active" onclick="cambiarResumen(7)">7 DÍAS</button>
+                <button class="tab-btn" onclick="cambiarResumen(15)">15 DÍAS</button>
+                <button class="tab-btn" onclick="cambiarResumen(30)">MES</button>
+            </div>
+            <div id="resumen-stats">
+                <h1 id="res-km" style="margin:0; color:#0f0">0.0 KM</h1>
+                <span id="res-gas" style="color:#aaa">0.0 Litros Gastados</span>
+            </div>
+        </div>
+
         <div id="lista-historial"></div>
     </div>
 
@@ -112,113 +119,93 @@
         let map = L.map('map', {zoomControl: false}).setView([10.17, -67.92], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        let marker = L.circleMarker([0,0], {radius: 7, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 2}).addTo(map);
-        let poly = L.polyline([], {color: '#0f0', weight: 4}).addTo(map);
-
-        let DB = JSON.parse(localStorage.getItem('lucy_v4_data')) || { registros: [], c7: {km:0, l:0}, c15: {km:0, l:0}, c30: {km:0, l:0}, factor: 0.05 };
+        let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
+        let DB = JSON.parse(localStorage.getItem('lucy_v4_2')) || { registros: [], factor: 0.05, extra: {km:0, gas:0} };
         
-        let rodando = false, enExtra = false, tTotal = 0, dTotal = 0, fuelR = 10, fuelI = 10;
-        let ultimaPos = null, timerGlobal;
+        let rodando = false, modoExtra = false;
+        let dTotal = 0, dExtra = 0, tTotal = 0, fuel = 10, ultimaPos = null;
 
-        // GEOLOCALIZACIÓN
         navigator.geolocation.watchPosition(pos => {
-            let latlng = [pos.coords.latitude, pos.coords.longitude];
-            marker.setLatLng(latlng);
-            if(rodando && ultimaPos) {
-                let d = map.distance(ultimaPos, latlng) / 1000;
-                if(d > 0.005) {
-                    dTotal += d;
-                    fuelR -= (d * DB.factor);
-                    poly.addLatLng(latlng);
+            let p = [pos.coords.latitude, pos.coords.longitude];
+            marker.setLatLng(p);
+            if(rodando && ultimaPos){
+                let dist = map.distance(ultimaPos, p) / 1000;
+                if(dist > 0.002){
+                    if(modoExtra) dExtra += dist;
+                    else dTotal += dist;
+                    fuel -= (dist * DB.factor);
                 }
             }
-            ultimaPos = latlng;
+            ultimaPos = p;
             actualizarUI();
-        }, null, {enableHighAccuracy: true});
+        }, null, {enableHighAccuracy:true});
 
-        function actualizarUI() {
-            document.getElementById('val-km').innerHTML = dTotal.toFixed(2) + '<span class="unit-small">KM</span>';
-            document.getElementById('val-fuel').innerHTML = fuelR.toFixed(1) + '<span class="unit-small">L</span>';
-            document.getElementById('val-money').innerText = "$" + (dTotal * DB.factor * 0.5).toFixed(2);
-            document.getElementById('val-time').innerText = fmt(tTotal);
-            
-            if(fuelR < 2.5) document.getElementById('val-fuel').classList.add('palpitante');
-            else document.getElementById('val-fuel').classList.remove('palpitante');
+        function actualizarUI(){
+            document.getElementById('val-km').innerHTML = dTotal.toFixed(1) + '<span class="unit-small">KM</span>';
+            document.getElementById('ex-km').innerHTML = dExtra.toFixed(1) + '<span class="unit-small">KM</span>';
+            document.getElementById('val-fuel').innerHTML = fuel.toFixed(1) + '<span class="unit-small">L</span>';
+            document.getElementById('val-money').innerText = "$" + (dTotal * 0.5).toFixed(2);
+            document.getElementById('ex-money').innerText = "$" + (dExtra * 0.5).toFixed(2);
         }
 
-        function iniciarRuta() {
+        function gestionarRuta(){
             rodando = !rodando;
             const btn = document.getElementById('main-action');
-            if(rodando) {
-                btn.innerText = "TERMINAR DÍA 🏁";
-                btn.classList.replace('btn-rodar', 'btn-stop');
-                document.getElementById('mark-btn').style.display = 'flex';
-                timerGlobal = setInterval(() => { tTotal++; actualizarUI(); }, 1000);
+            if(rodando){
+                btn.innerText = "FINALIZAR DÍA 🏁";
+                btn.className = "btn-main btn-stop";
+                document.getElementById('mark-btn').style.display = "block";
+                setInterval(() => { if(rodando) tTotal++; }, 1000);
             } else {
-                if(confirm("¿Cerrar jornada?")) location.reload();
-                else rodando = true;
+                if(confirm("¿Amo, cerramos la jornada de hoy?")) location.reload();
             }
         }
 
-        function abrirModalNombre() { document.getElementById('modal-nombre').style.display = 'flex'; }
+        function toggleExtra(){
+            modoExtra = !modoExtra;
+            const btn = document.getElementById('btn-extra');
+            const panel = document.getElementById('panel-extra-data');
+            btn.style.background = modoExtra ? "#ff00ea" : "#000";
+            panel.style.display = modoExtra ? "block" : "none";
+        }
+
+        function abrirModal(){ document.getElementById('modal-nombre').style.display = 'flex'; }
         
-        function confirmarPunto() {
-            let nombre = document.getElementById('input-nombre').value || "Cliente";
-            L.marker(ultimaPos).addTo(map).bindTooltip(nombre.toUpperCase(), {permanent: true, className: 'base-label'});
-            
-            // GUARDADO REAL EN DB
-            let registro = {
-                fecha: new Date().toLocaleString(),
-                nombre: nombre,
-                km: dTotal,
-                gas: dTotal * DB.factor
+        function guardarPunto(){
+            let nom = document.getElementById('input-nombre').value || "Servicio";
+            let reg = { 
+                cliente: nom, 
+                km: dTotal, 
+                gas: (dTotal * DB.factor).toFixed(2),
+                fecha: new Date().toLocaleDateString(),
+                extra: dExtra.toFixed(1)
             };
-            DB.registros.unshift(registro);
-            DB.c7.km += dTotal; DB.c15.km += dTotal; DB.c30.km += dTotal;
-            
-            localStorage.setItem('lucy_v4_data', JSON.stringify(DB));
-            
-            cerrarModales();
-            alert("✅ Punto Guardado: " + nombre);
+            DB.registros.unshift(reg);
+            localStorage.setItem('lucy_v4_2', JSON.stringify(DB));
+            document.getElementById('modal-nombre').style.display = 'none';
+            alert("✅ Servicio guardado en historial");
         }
 
-        function toggleExpand(id) {
-            let el = document.getElementById(id);
-            let display = el.style.display;
-            document.querySelectorAll('.hud-expand').forEach(e => e.style.display = 'none');
-            el.style.display = (display === 'flex') ? 'none' : 'flex';
-        }
-
-        function cerrarModales() { 
-            document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none');
-            document.querySelectorAll('.hud-expand').forEach(e => e.style.display = 'none');
-        }
-
-        function activarExtra() {
-            enExtra = !enExtra;
-            document.getElementById('btn-extra-hud').style.borderColor = enExtra ? '#ff00ea' : '#0f0';
-            document.getElementById('btn-extra-hud').style.color = enExtra ? '#ff00ea' : '#fff';
-        }
-
-        function abrirHistorial() {
+        function abrirHistorial(){
             const lista = document.getElementById('lista-historial');
             lista.innerHTML = DB.registros.map(r => `
                 <div class="card-hist">
-                    <b>${r.nombre}</b><br>
-                    <small>${r.fecha}</small><hr>
-                    🛣️ ${r.km.toFixed(2)} KM | ⛽ ${r.gas.toFixed(1)} L
+                    <div style="display:flex; justify-content:space-between">
+                        <b>🏠 ${r.cliente}</b>
+                        <small>📅 ${r.fecha}</small>
+                    </div>
+                    <div style="margin-top:8px; font-size:0.9em; color:#0f0">
+                        📍 ${r.km.toFixed(1)} KM | ⛽ ${r.gas} L | 🚀 Extra: ${r.extra}km
+                    </div>
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
-        function cerrarHistorial() { document.getElementById('pantalla-historial').style.display = 'none'; }
-        function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); }
-
-        window.onclick = function(event) {
-            if (!event.target.closest('.hud-btn-container') && !event.target.closest('.hud-expand')) {
-                cerrarModales();
-            }
+        function cerrarHistorial(){ document.getElementById('pantalla-historial').style.display = 'none'; }
+        function toggleExpand(id){
+            let e = document.getElementById(id);
+            e.style.display = e.style.display === 'flex' ? 'none' : 'flex';
         }
     </script>
 </body>
