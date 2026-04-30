@@ -261,23 +261,71 @@
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
-        function finalizarYGuardar(){
-            let cTotal = dTotal * DB.factor;
-            let mTotal = cTotal * 0.5;
-            
-            let reg = {
-                cliente: clienteActual, 
-                fecha: new Date().toLocaleString(),
-                km: dTotal.toFixed(3), 
-                time: formatTime(tTotal), 
-                gas: cTotal.toFixed(3), 
-                money: mTotal.toFixed(2),
-                extra: {
-                    km: dExtra.toFixed(3), 
-                    time: formatTime(tExtra).substring(3),
-                    gas: (dExtra * DB.factor).toFixed(3),
-                    money: (dExtra * DB.factor * 0.5).toFixed(2)
-                }
+    function finalizarYGuardar(){
+    let cTotal = dTotal * DB.factor;
+    let mTotal = cTotal * 0.5;
+    
+    let reg = {
+        cliente: clienteActual, 
+        fecha: new Date().toLocaleString(),
+        km: dTotal.toFixed(3), 
+        time: formatTime(tTotal), 
+        gas: cTotal.toFixed(3), 
+        money: mTotal.toFixed(2),
+        extra: {
+            km: dExtra.toFixed(3), 
+            time: formatTime(tExtra).substring(3),
+            gas: (dExtra * DB.factor).toFixed(3),
+            money: (dExtra * DB.factor * 0.5).toFixed(2)
+        }
+    };
+    DB.registros.unshift(reg);
+
+    // ESTE ES EL PUENTE QUE TE FALTA EN LA FOTO:
+    [DB.siete, DB.quince, DB.mes].forEach(obj => {
+        obj.km = (parseFloat(obj.km) || 0) + dTotal;
+        obj.time = (parseInt(obj.time) || 0) + tTotal; // SUMA DE TIEMPO REAL
+        obj.gas = (parseFloat(obj.gas) || 0) + cTotal;
+        obj.money = (parseFloat(obj.money) || 0) + mTotal;
+    });
+
+    actualizarUI(); 
+    resetTodo();
+}
+            km: dExtra.toFixed(3), 
+            time: formatTime(tExtra).substring(3),
+            gas: (dExtra * DB.factor).toFixed(3),
+            money: (dExtra * DB.factor * 0.5).toFixed(2)
+        }
+    };
+    DB.registros.unshift(reg);
+
+    // 2. SOLDADURA MAESTRA: Sumamos a los renglones de 7, 15 y 30 días
+    [DB.siete, DB.quince, DB.mes].forEach(obj => {
+        obj.km = (parseFloat(obj.km) || 0) + dTotal;
+        obj.time = (parseInt(obj.time) || 0) + tTotal; // <-- AQUÍ SE CONECTA EL TIEMPO
+        obj.gas = (parseFloat(obj.gas) || 0) + cTotal;
+        obj.money = (parseFloat(obj.money) || 0) + mTotal;
+    });
+
+    actualizarUI(); // Refrescamos las barras para ver los resultados
+    resetTodo();    // Limpiamos los cronómetros para la próxima
+}
+        }
+    };
+    DB.registros.unshift(reg);
+
+    // 2. SOLDADURA MAESTRA: Sumamos a los renglones de 7, 15 y 30 días
+    [DB.siete, DB.quince, DB.mes].forEach(obj => {
+        obj.km = (parseFloat(obj.km) || 0) + dTotal;
+        obj.time = (parseInt(obj.time) || 0) + tTotal; // <-- AQUÍ SE CONECTA EL TIEMPO
+        obj.gas = (parseFloat(obj.gas) || 0) + cTotal;
+        obj.money = (parseFloat(obj.money) || 0) + mTotal;
+    });
+
+    actualizarUI(); // Refrescamos las barras para ver los resultados
+    resetTodo();    // Limpiamos los cronómetros para la próxima
+}
             };
             DB.registros.unshift(reg);
 
