@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9.5 - SISTEMA INTEGRAL</title>
+    <title>LUCY ANATO V5.9.6 - REPARACIÓN TOTAL</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -130,6 +130,7 @@
         let layerPines = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
+        // BASE DE DATOS UNIFICADA EN MINÚSCULAS
         let DB = JSON.parse(localStorage.getItem('lucy_v59_final')) || {
             registros: [], factor: 0.05, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0}, 
@@ -222,21 +223,27 @@
         }, null, {enableHighAccuracy:true});
 
         function finalizarYGuardar(){
+            // CAPTURA DE DATOS FINAL (SOLDADURA REFORZADA)
             let cTotal = dTotal * DB.factor;
             let mTotal = cTotal * 0.5;
-            let tGuardar = tTotal; // Soldadura de tiempo
+            let tFinalParaGuardar = tTotal; 
 
+            // INYECCIÓN EN ACUMULADORES (7, 15, 30 días)
             ['siete', 'quince', 'mes'].forEach(periodo => {
                 DB[periodo].km += dTotal;
-                DB[periodo].time += tGuardar;
+                DB[periodo].time += tFinalParaGuardar; // Aquí se guarda la suma real
                 DB[periodo].gas += cTotal;
                 DB[periodo].money += mTotal;
             });
 
+            // GUARDAR EN EL HISTORIAL (FICHA DEL CLIENTE)
             DB.registros.unshift({
-                cliente: clienteActual, fecha: new Date().toLocaleString(),
-                km: dTotal.toFixed(3), time: formatTime(tTotal), 
-                gas: cTotal.toFixed(3), money: mTotal.toFixed(2),
+                cliente: clienteActual, 
+                fecha: new Date().toLocaleString(),
+                km: dTotal.toFixed(3), 
+                time: formatTime(tFinalParaGuardar), // Ahora sí se conecta al informe
+                gas: cTotal.toFixed(3), 
+                money: mTotal.toFixed(2),
                 extra: { km: dExtra.toFixed(3), time: formatTime(tExtra) }
             });
 
@@ -254,23 +261,25 @@
         }
 
         function abrirHistorial(){
+            // RENDER DE RESÚMENES (7, 15, 30)
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
                 <div class="barra-resumen">
                     <span class="btn-reset-bar" onclick="resetAcumulado('${p}')">RESET</span>
-                    <b>RESUMEN ${p === 'siete' ? '7' : p === 'quince' ? '15' : '30'} DÍAS:</b>
+                    <b style="color:#fff;">RESUMEN ${p === 'siete' ? '7' : p === 'quince' ? '15' : '30'} DÍAS:</b>
                     <div class="grid-4-jinetes">
-                        <div>KM<br><b>${DB[p].km.toFixed(2)}</b></div>
-                        <div>TIME<br><b>${formatTime(DB[p].time).substring(0,5)}</b></div>
-                        <div>GAS<br><b>${DB[p].gas.toFixed(2)}</b></div>
-                        <div>USD<br><b>$${DB[p].money.toFixed(2)}</b></div>
+                        <div>KM<br><b style="color:#0f0;">${DB[p].km.toFixed(2)}</b></div>
+                        <div>TIME<br><b style="color:#0f0;">${formatTime(DB[p].time).substring(0,5)}</b></div>
+                        <div>GAS<br><b style="color:#0f0;">${DB[p].gas.toFixed(2)}</b></div>
+                        <div>USD<br><b style="color:#0f0;">$${DB[p].money.toFixed(2)}</b></div>
                     </div>
                 </div>
             `).join('');
 
+            // RENDER DE REGISTROS INDIVIDUALES
             document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span style="float:right; color:#f00;" onclick="borrarReg(${i})">🗑️</span>
-                    <b>${r.cliente}</b> <small>${r.fecha}</small><br>
+                    <b style="color:#0f0;">${r.cliente}</b> <small style="color:#888;">${r.fecha}</small><br>
                     Total: ${r.km}km | ${r.time} | $${r.money}<br>
                     <small style="color:#f0f;">🚀 Extra: ${r.extra.km}km | ${r.extra.time}</small>
                 </div>
