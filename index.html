@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V3.2 PRO RECTIFICADA</title>
+    <title>LUCY JHA - V3.3 PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -41,13 +41,28 @@
         .item-cliente { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 5px; border: 1px solid #ddd; color: #333; }
         .btn-borrar-mini { background: #ff0000; color: #fff; width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 0.8em; }
         .btn-reset-corte { position: absolute; right: 10px; top: 10px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid #fff; padding: 2px 8px; border-radius: 5px; font-size: 0.7em; }
-        .ruta-ficha { background: #fff; border: 2px solid #0f0; border-radius: 10px; padding: 10px; margin-bottom: 10px; color: #000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .ruta-ficha { background: #1a1a1a; border: 2px solid #0f0; border-radius: 15px; padding: 12px; margin-bottom: 15px; color: #fff; }
+        .sub-ficha { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px; margin-top: 5px; font-size: 0.85em; }
+
+        /* MODAL DE NOMBRE PROPIO */
+        #modal-nombre { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #111; border: 2px solid #0f0; padding: 20px; border-radius: 20px; width: 80%; text-align: center; }
+        #input-nombre-ruta { width: 90%; padding: 10px; background: #000; color: #0f0; border: 1px solid #0f0; font-size: 1.2em; border-radius: 10px; margin: 15px 0; }
     </style>
 </head>
 <body>
 
     <div id="header"><h1>LUCY JHA</h1></div>
     <div id="tank-display-top">10.0</div>
+
+    <!-- MODAL PARA PEDIR NOMBRE -->
+    <div id="modal-nombre">
+        <div class="modal-content">
+            <h3 style="color:#0f0; margin:0;">NOMBRE DEL CLIENTE</h3>
+            <input type="text" id="input-nombre-ruta" placeholder="Escribe aquí...">
+            <button onclick="confirmarNombre()" style="background:#0f0; color:#000;">GUARDAR PUNTO 📍</button>
+        </div>
+    </div>
 
     <div id="calib-container">
         <span>LLEGADA (L)</span>
@@ -114,7 +129,7 @@
 
         <div id="run-area" style="display:none;">
             <div class="btn-group">
-                <button id="pause-btn" class="btn-pause" onclick="pausarRuta()">MARCAR / PAUSA 📍</button>
+                <button id="pause-btn" class="btn-pause" onclick="abrirModalNombre()">MARCAR / PAUSA 📍</button>
                 <button id="extra-btn" class="btn-extra" onclick="activarExtra()">EXTRA 🚀</button>
             </div>
             <button class="btn-stop" onclick="finalizarRuta()">TERMINAR DÍA 🏁</button>
@@ -134,7 +149,6 @@
         let ultimaPos = null;
         let marcadoresMapa = [];
 
-        // Inicializar base de datos con acumuladores independientes
         let DB = JSON.parse(localStorage.getItem('lucy_data')) || { 
             etiquetas: [], 
             c7: {km:0, l:0, t:0}, 
@@ -155,7 +169,7 @@
         navigator.geolocation.watchPosition(pos => {
             let latlng = [pos.coords.latitude, pos.coords.longitude];
             if(!baseFijada) {
-                L.marker(latlng).addTo(map).bindTooltip("INICIO", {permanent: true, className: 'base-label'});
+                L.marker(latlng).addTo(map).bindTooltip("🏠 MULTISERVICIOS ANATO SMG", {permanent: true, className: 'base-label'});
                 map.setView(latlng, 17);
                 baseFijada = true;
             }
@@ -185,7 +199,6 @@
             document.getElementById('e-money').innerText = (dE * factor * PRECIO).toFixed(2);
             document.getElementById('e-gas').innerText = (dE * factor).toFixed(1);
             
-            // Actualizar Barras de Corte con sus propios datos
             ['7','15','30'].forEach(c => {
                 let data = DB['c'+c];
                 let tT = data.t + (tC + tE);
@@ -195,12 +208,27 @@
             });
         }
 
+        // FUNCIONES DE MODAL NOMBRE
+        function abrirModalNombre() {
+            if(!ultimaPos) return;
+            enP = true;
+            document.getElementById('pause-btn').innerText = "REANUDAR ▶️";
+            document.getElementById('modal-nombre').style.display = 'flex';
+        }
+
+        function confirmarNombre() {
+            let n = document.getElementById('input-nombre-ruta').value;
+            if(n) {
+                crearEtiqueta(ultimaPos, n);
+                document.getElementById('input-nombre-ruta').value = "";
+                document.getElementById('modal-nombre').style.display = 'none';
+                enP = false;
+                document.getElementById('pause-btn').innerText = "MARCAR / PAUSA 📍";
+            }
+        }
+
         function iniciarRuta() {
-            // Reset Maestro para empezar de cero real
             tC = 0; tE = 0; dC = 0; dE = 0;
-            document.getElementById('c-time').innerText = "00:00";
-            document.getElementById('e-time').innerText = "00:00";
-            
             grabando = true;
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('run-area').style.display = 'block';
@@ -228,47 +256,42 @@
         function crearEtiqueta(latlng, nombre, guardar = true) {
             let m = L.marker(latlng).addTo(map).bindTooltip(nombre.toUpperCase(), {permanent: true, className: 'base-label'});
             m.nombreAsignado = nombre;
+            
+            // FUNCIÓN TOQUE LARGO (3 segundos)
+            let timer;
+            m.on('mousedown touchstart', (e) => {
+                timer = setTimeout(() => {
+                    if(confirm("¿Quieres eliminar esta etiqueta del mapa?")) {
+                        map.removeLayer(m);
+                    }
+                }, 3000);
+            });
+            m.on('mouseup mouseleave touchend', () => clearTimeout(timer));
+
             marcadoresMapa.push(m);
 
             if(guardar) {
                 let dActual = new Date();
                 let dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
                 
-                let kmTramo = dC + dE;
-                let gasTramo = kmTramo * factor;
-                let plataTramo = gasTramo * PRECIO;
-                let tiempoTramo = tC + tE;
+                let gasC = dC * factor;
+                let gasE = dE * factor;
 
                 DB.etiquetas.push({
-                    l: latlng, 
-                    n: nombre, 
-                    t: tiempoTramo, 
-                    km: kmTramo, 
-                    gas: gasTramo,
-                    plata: plataTramo,
-                    dia: dias[dActual.getDay()]
+                    l: latlng, n: nombre, dia: dias[dActual.getDay()],
+                    c: { t: tC, km: dC, gas: gasC, plata: gasC * PRECIO },
+                    e: { t: tE, km: dE, gas: gasE, plata: gasE * PRECIO }
                 });
 
-                // Sumar al acumulado de las barras antes de limpiar
                 ['c7','c15','c30'].forEach(c => {
-                    DB[c].km += kmTramo;
-                    DB[c].l += gasTramo;
-                    DB[c].t += tiempoTramo;
+                    DB[c].km += (dC + dE);
+                    DB[c].l += (gasC + gasE);
+                    DB[c].t += (tC + tE);
                 });
 
                 tC = 0; tE = 0; dC = 0; dE = 0;
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
-                actualizarListaHistorial();
                 actualizarUI();
-            }
-        }
-
-        function pausarRuta() { 
-            enP = !enP; 
-            document.getElementById('pause-btn').innerText = enP ? "REANUDAR ▶️" : "MARCAR / PAUSA 📍"; 
-            if(enP && ultimaPos) {
-                let n = prompt("¿Nombre del lugar o Cliente?");
-                if(n) crearEtiqueta(ultimaPos, n);
             }
         }
 
@@ -287,7 +310,7 @@
             DB.etiquetas.forEach((item, index) => {
                 let div = document.createElement('div');
                 div.className = 'item-cliente';
-                div.innerHTML = `<span><b>${item.n.toUpperCase()}</b> (${fmt(item.t || 0)})</span> 
+                div.innerHTML = `<span><b>${item.n.toUpperCase()}</b></span> 
                                  <button class="btn-borrar-mini" onclick="borrarRegistro(${index})">X</button>`;
                 lista.appendChild(div);
             });
@@ -312,7 +335,6 @@
         function verDia(btn, dia) {
             document.querySelectorAll('.btn-semana button').forEach(b => b.style.background = '#eee');
             btn.style.background = '#0f0';
-            
             let registrosDia = DB.etiquetas.filter(x => x.dia === dia);
             let html = `<b>RUTAS DEL ${dia.toUpperCase()}</b><br><br>`;
             
@@ -320,15 +342,27 @@
                 html += "Sin rutas grabadas.";
             } else {
                 registrosDia.forEach(r => {
+                    let totalT = r.c.t + r.e.t;
+                    let totalKm = r.c.km + r.e.km;
+                    let totalGas = r.c.gas + r.e.gas;
+                    let totalP = r.c.plata + r.e.plata;
+
                     html += `
                         <div class="ruta-ficha">
-                            <b>📍 ${r.n.toUpperCase()}</b><br>
-                            ⏱️ Tiempo: ${fmt(r.t)}<br>
-                            🛣️ Recorrido: ${r.km.toFixed(2)} km<br>
-                            ⛽ Gasolina: ${r.gas.toFixed(1)} L<br>
-                            💵 Costo: $${r.plata.toFixed(2)}
-                        </div>
-                    `;
+                            <b style="color:#0f0; font-size:1.2em;">👤 ${r.n.toUpperCase()}</b>
+                            <div class="sub-ficha">
+                                <b>CLIENTE:</b><br>
+                                ⏱️ ${fmt(r.c.t)} | 🛣️ ${r.c.km.toFixed(2)}km | ⛽ ${r.c.gas.toFixed(1)}L | 💵 $${r.c.plata.toFixed(2)}
+                            </div>
+                            ${r.e.t > 0 ? `
+                            <div class="sub-ficha" style="border-left: 3px solid #ff00ea;">
+                                <b style="color:#ff00ea;">🚀 EXTRA:</b><br>
+                                ⏱️ ${fmt(r.e.t)} | 🛣️ ${r.e.km.toFixed(2)}km | ⛽ ${r.e.gas.toFixed(1)}L | 💵 $${r.e.plata.toFixed(2)}
+                            </div>` : ''}
+                            <div style="margin-top:10px; border-top:1px dashed #555; padding-top:5px; font-weight:bold; text-align:right;">
+                                TOTAL: ${fmt(totalT)} | ${totalKm.toFixed(2)}km | $${totalP.toFixed(2)}
+                            </div>
+                        </div>`;
                 });
             }
             document.getElementById('detalle-dia').innerHTML = html;
@@ -338,7 +372,6 @@
             if(confirm("¿Guardar y finalizar día?")) {
                 grabando = false;
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
-                alert("Día finalizado."); 
                 location.reload(); 
             }
         }
@@ -346,8 +379,6 @@
         window.onload = () => {
             DB.etiquetas.forEach(x => {
                 let m = L.marker(x.l).addTo(map).bindTooltip(x.n.toUpperCase(), {permanent: true, className: 'base-label'});
-                m.nombreAsignado = x.n;
-                marcadoresMapa.push(m);
             });
             actualizarUI();
         }
