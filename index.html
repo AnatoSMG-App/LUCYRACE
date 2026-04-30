@@ -3,49 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.8 - PROTOCOLO MURACHI</title>
+    <title>LUCY ANATO V5.9 - PROTOCOLO MURACHI</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        /* HUD Superior Principal */
+        /* HUD Superior */
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
         .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
         
-        /* Alerta Roja 4L */
-        @keyframes alert-fuel { 0% { background: #f00; border-color: #fff; } 50% { background: #400; border-color: #f00; } 100% { background: #f00; border-color: #fff; } }
-        .fuel-alert { animation: alert-fuel 0.6s infinite !important; color: #fff !important; }
+        /* Alerta Roja 4L Real */
+        @keyframes alert-fuel-red { 0% { background: #f00; } 50% { background: #600; } 100% { background: #f00; } }
+        .fuel-alert { animation: alert-fuel-red 0.5s infinite !important; border-color: #fff !important; }
 
         .val-big { font-size: 1.5em; font-weight: 900; color: #0f0; line-height: 1; }
         .unit-small { font-size: 0.5em; color: #aaa; margin-left: 2px; }
         .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
 
-        /* Barras de Resumen (Dentro del Registro) */
-        .mini-resumen-container { margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px; }
-        .barra-resumen { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; border: 1px solid #0f0; border-radius: 8px; padding: 6px 12px; font-size: 0.75em; position: relative; }
+        /* Barras de Resumen Slim Horizontales */
+        .mini-resumen-container { margin-bottom: 15px; display: flex; flex-direction: column; gap: 4px; }
+        .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 4px 8px; font-size: 0.65em; }
         .barra-resumen b { color: #0f0; font-size: 1.1em; }
-        .btn-reset-bar { color: #f00; font-weight: 900; margin-left: 10px; cursor: pointer; border: 1px solid #f00; padding: 2px 5px; border-radius: 4px; font-size: 0.8em; }
+        .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; text-align: center; margin-top: 2px; }
+        .btn-reset-bar { float: right; color: #f00; font-weight: 900; cursor: pointer; border: 1px solid #f00; padding: 0 4px; border-radius: 3px; }
 
         /* Extra Flotante fucsia */
-        #extra-float { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 10px; border-radius: 12px; display: none; z-index: 3000; width: 88%; text-align: center; box-shadow: 0 0 15px #f0f; }
-        .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 5px; font-size: 0.75em; font-weight: 900; }
+        #extra-float { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
+        .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
 
-        /* Botones HUD Laterales */
         .side-hud { position: absolute; right: 10px; bottom: 120px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
-        .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+        .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; }
 
         .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 94%; display: flex; gap: 10px; z-index: 1000; }
-        .btn-main { flex: 1; padding: 20px; border-radius: 15px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .btn-main { flex: 1; padding: 18px; border-radius: 15px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; }
         .btn-rodar { background: #0f0; color: #000; }
         .btn-stop { background: #f00; color: #fff; }
 
-        /* Modales Full Screen */
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
         .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; position: relative; }
         .btn-del { position: absolute; right: 10px; top: 10px; font-size: 1.2em; color: #f00; }
-        .btn-close { background: #f00; color: #fff; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; border: none; margin-top: 15px; font-size: 1em; }
+        .btn-close { background: #f00; color: #fff; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; border: none; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -53,10 +52,10 @@
     <div id="map"></div>
 
     <div id="extra-float">
-        <span style="font-size: 0.9em; font-weight: 900; color: #fff;">🚀 EXTRA: <span id="ex-nombre">CLIENTE</span></span>
+        <span style="font-size: 0.8em; font-weight: 900; color: #fff;">🚀 EXTRA: <span id="ex-nombre">CLIENTE</span></span>
         <div class="extra-grid">
             <div><small>KM</small><br><span id="ex-km">0.000</span></div>
-            <div><small>MIN</small><br><span id="ex-time">00:00</span></div>
+            <div><small>TIEMPO</small><br><span id="ex-time">00:00</span></div>
             <div><small>GAS</small><br><span id="ex-gas">0.000</span></div>
             <div><small>USD</small><br><span id="ex-money">0.00</span></div>
         </div>
@@ -64,7 +63,6 @@
 
     <div class="top-panels">
         <div class="row-panels">
-            <!-- Kilometraje Principal -->
             <div class="panel-data" style="border-color: #fff;">
                 <span class="txt-label">⏱️ <span id="val-time">00:00:00</span></span>
                 <span class="val-big" id="val-km" onclick="ajusteManualKM()">0.000<span class="unit-small">KM</span></span>
@@ -73,7 +71,6 @@
                     <span id="val-money-route" style="color:#0f0; font-weight:bold; font-size:0.8em;">$0.00</span>
                 </div>
             </div>
-            <!-- Tanque Loncin -->
             <div class="panel-data" id="panel-fuel" onclick="abrirFuelModal()">
                 <span class="txt-label">⛽ TANQUE LONCIN</span>
                 <span class="val-big" id="val-fuel" style="color: #00ffff;">15.00<span class="unit-small">L</span></span>
@@ -95,22 +92,39 @@
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00; color:#000;">PAUSA ⏸</button>
     </div>
 
-    <!-- Modal de Historial con Acumuladores -->
     <div id="pantalla-historial" class="full-modal">
-        <h2 style="color:#0f0; border-bottom: 2px solid #0f0; padding-bottom: 10px;">📊 REGISTRO Y RESUMEN</h2>
+        <h2 style="color:#0f0; border-bottom: 2px solid #0f0; font-size:1.2em;">📊 REGISTRO Y RESUMEN</h2>
         
         <div class="mini-resumen-container">
             <div class="barra-resumen">
-                <span>7 DÍAS:</span> <span><b id="res-7-km">0.000</b>km | <b id="res-7-money">$0.00</b></span>
-                <span class="btn-reset-bar" onclick="resetAcumulado('siete')">X</span>
+                <span class="btn-reset-bar" onclick="resetAcumulado('siete')">RESET</span>
+                <b style="color:#fff">RESUMEN 7 DÍAS:</b>
+                <div class="grid-4-jinetes">
+                    <div>KM<br><b id="res-7-km">0.000</b></div>
+                    <div>TIME<br><b id="res-7-time">00:00</b></div>
+                    <div>GAS<br><b id="res-7-gas">0.000</b></div>
+                    <div>USD<br><b id="res-7-money">$0.00</b></div>
+                </div>
             </div>
             <div class="barra-resumen">
-                <span>15 DÍAS:</span> <span><b id="res-15-km">0.000</b>km | <b id="res-15-money">$0.00</b></span>
-                <span class="btn-reset-bar" onclick="resetAcumulado('quince')">X</span>
+                <span class="btn-reset-bar" onclick="resetAcumulado('quince')">RESET</span>
+                <b style="color:#fff">RESUMEN 15 DÍAS:</b>
+                <div class="grid-4-jinetes">
+                    <div>KM<br><b id="res-15-km">0.000</b></div>
+                    <div>TIME<br><b id="res-15-time">00:00</b></div>
+                    <div>GAS<br><b id="res-15-gas">0.000</b></div>
+                    <div>USD<br><b id="res-15-money">$0.00</b></div>
+                </div>
             </div>
             <div class="barra-resumen">
-                <span>30 DÍAS:</span> <span><b id="res-30-km">0.000</b>km | <b id="res-30-money">$0.00</b></span>
-                <span class="btn-reset-bar" onclick="resetAcumulado('mes')">X</span>
+                <span class="btn-reset-bar" onclick="resetAcumulado('mes')">RESET</span>
+                <b style="color:#fff">RESUMEN 30 DÍAS:</b>
+                <div class="grid-4-jinetes">
+                    <div>KM<br><b id="res-30-km">0.000</b></div>
+                    <div>TIME<br><b id="res-30-time">00:00</b></div>
+                    <div>GAS<br><b id="res-30-gas">0.000</b></div>
+                    <div>USD<br><b id="res-30-money">$0.00</b></div>
+                </div>
             </div>
         </div>
 
@@ -118,18 +132,17 @@
         <button class="btn-close" onclick="cerrarModales()">VOLVER AL MAPA</button>
     </div>
 
-    <!-- Otros Modales -->
     <div id="modal-fuel" class="full-modal">
         <h2>⛽ AJUSTAR TANQUE</h2>
-        <input type="number" id="input-fuel" step="0.1" style="width:100%; padding:20px; font-size:2.5em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center; border-radius:15px;">
-        <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFuel()">ACTUALIZAR LITROS</button>
+        <input type="number" id="input-fuel" step="0.1" style="width:100%; padding:20px; font-size:2.5em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center;">
+        <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFuel()">ACTUALIZAR</button>
         <button class="btn-close" onclick="cerrarModales()">CANCELAR</button>
     </div>
 
     <div id="modal-calibrar" class="full-modal">
         <h2>🔧 CALIBRACIÓN MOTOR</h2>
         <p>Factor actual: <b id="current-factor" style="color:#0f0;"></b></p>
-        <input type="number" id="input-factor" step="0.001" style="width:100%; padding:20px; font-size:2em; background:#111; color:#fff; border-radius:10px;">
+        <input type="number" id="input-factor" step="0.001" style="width:100%; padding:20px; font-size:2em; background:#111; color:#fff;">
         <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFactor()">CALIBRAR</button>
         <button class="btn-close" onclick="cerrarModales()">CERRAR</button>
     </div>
@@ -141,10 +154,11 @@
         let layerPines = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        // Base de Datos Reforzada con Acumuladores
-        let DB = JSON.parse(localStorage.getItem('lucy_v58')) || {
+        let DB = JSON.parse(localStorage.getItem('lucy_v59')) || {
             registros: [], factor: 0.05, fuel: 15.0,
-            siete: {km:0, money:0}, quince: {km:0, money:0}, mes: {km:0, money:0}
+            siete: {km:0, time:0, gas:0, money:0}, 
+            quince: {km:0, time:0, gas:0, money:0}, 
+            mes: {km:0, time:0, gas:0, money:0}
         };
 
         let estado = "parado", extraActivo = false, clienteActual = "Sin Nombre";
@@ -155,7 +169,6 @@
             document.getElementById('val-time').innerText = formatTime(tTotal);
             document.getElementById('val-fuel').innerHTML = DB.fuel.toFixed(2) + '<span class="unit-small">L</span>';
             
-            // Alerta Roja 4L
             if(DB.fuel <= 4.0) document.getElementById('panel-fuel').classList.add('fuel-alert');
             else document.getElementById('panel-fuel').classList.remove('fuel-alert');
 
@@ -175,15 +188,15 @@
                 document.getElementById('extra-float').style.display = 'none';
             }
 
-            // Actualizar textos de acumuladores
-            document.getElementById('res-7-km').innerText = DB.siete.km.toFixed(3);
-            document.getElementById('res-7-money').innerText = "$" + DB.siete.money.toFixed(2);
-            document.getElementById('res-15-km').innerText = DB.quince.km.toFixed(3);
-            document.getElementById('res-15-money').innerText = "$" + DB.quince.money.toFixed(2);
-            document.getElementById('res-30-km').innerText = DB.mes.km.toFixed(3);
-            document.getElementById('res-30-money').innerText = "$" + DB.mes.money.toFixed(2);
+            // Actualizar Resúmenes de 4 Jinetes
+            ['siete', 'quince', 'mes'].forEach(periodo => {
+                document.getElementById(`res-${periodo}-km`).innerText = DB[periodo].km.toFixed(3);
+                document.getElementById(`res-${periodo}-time`).innerText = formatTime(DB[periodo].time).substring(0,5);
+                document.getElementById(`res-${periodo}-gas`).innerText = DB[periodo].gas.toFixed(3);
+                document.getElementById(`res-${periodo}-money`).innerText = "$" + DB[periodo].money.toFixed(2);
+            });
 
-            localStorage.setItem('lucy_v58', JSON.stringify(DB));
+            localStorage.setItem('lucy_v59', JSON.stringify(DB));
         }
 
         function controlRuta(){
@@ -206,7 +219,6 @@
                 if(n) {
                     clienteActual = n;
                     document.getElementById('ex-nombre').innerText = n.toUpperCase();
-                    if(ultimaPos) L.marker(ultimaPos).addTo(layerPines).bindPopup(n).openPopup();
                 }
             } else {
                 estado = "rodando";
@@ -245,36 +257,40 @@
         }, null, {enableHighAccuracy:true});
 
         function finalizarYGuardar(){
-            let mRuta = (dTotal * DB.factor * 0.5);
+            let cTotal = dTotal * DB.factor;
+            let mTotal = cTotal * 0.5;
             
-            // Guardar en Historial
             let reg = {
                 cliente: clienteActual, 
                 fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), 
                 time: formatTime(tTotal), 
-                gas: (dTotal*DB.factor).toFixed(3), 
-                money: mRuta.toFixed(2),
+                gas: cTotal.toFixed(3), 
+                money: mTotal.toFixed(2),
                 extra: {
                     km: dExtra.toFixed(3), 
                     time: formatTime(tExtra).substring(3),
+                    gas: (dExtra * DB.factor).toFixed(3),
                     money: (dExtra * DB.factor * 0.5).toFixed(2)
                 }
             };
             DB.registros.unshift(reg);
 
-            // ACTUALIZAR ACUMULADORES DE 7, 15, 30 DÍAS
+            // Sumar a los acumuladores globales
             [DB.siete, DB.quince, DB.mes].forEach(obj => {
                 obj.km += dTotal;
-                obj.money += mRuta;
+                obj.time += tTotal;
+                obj.gas += cTotal;
+                obj.money += mTotal;
             });
 
+            if(ultimaPos) L.marker(ultimaPos).addTo(layerPines).bindPopup(clienteActual + " $" + mTotal.toFixed(2)).openPopup();
             resetTodo();
         }
 
         function resetAcumulado(tipo){
             if(confirm("¿Resetear contador de " + tipo + "?")){
-                DB[tipo] = {km:0, money:0};
+                DB[tipo] = {km:0, time:0, gas:0, money:0};
                 actualizarUI();
             }
         }
@@ -294,13 +310,15 @@
             list.innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span class="btn-del" onclick="borrarRegistro(${i})">🗑️</span>
-                    <b>${r.cliente}</b> <small style="color:#666;">${r.fecha}</small><br>
-                    <div style="display:grid; grid-template-columns: repeat(2,1fr); font-size:0.9em; margin-top:5px;">
-                        <span>🏁 ${r.km}km</span> <span>⛽ ${r.gas}L</span>
-                        <span style="color:#0f0; font-weight:900;">💰 $${r.money}</span> <span>⏱️ ${r.time}</span>
+                    <b>${r.cliente}</b> <small style="color:#666;">${r.fecha}</small>
+                    <div class="grid-4-jinetes" style="margin-top:8px; border-top:1px solid #333; padding-top:5px;">
+                        <div>KM<br><b>${r.km}</b></div>
+                        <div>TIME<br><b>${r.time.substring(0,5)}</b></div>
+                        <div>GAS<br><b>${r.gas}L</b></div>
+                        <div>USD<br><b style="color:#0f0;">$${r.money}</b></div>
                     </div>
-                    <div style="color:#f0f; font-size:0.85em; margin-top:8px; border-top:1px solid #333; padding-top:4px;">
-                        🚀 EXTRA: ${r.extra.km}km | ${r.extra.time} | $${r.extra.money}
+                    <div style="color:#f0f; font-size:0.85em; margin-top:8px; border-top:1px dashed #444; padding-top:5px;">
+                        🚀 EXTRA: ${r.extra.km}km | ${r.extra.time} | ${r.extra.gas}L | $${r.extra.money}
                     </div>
                 </div>
             `).join('');
@@ -308,7 +326,7 @@
         }
 
         function borrarRegistro(i){
-            if(confirm("¿Borrar este registro? (No afectará los acumulados de 7/15/30 días)")){
+            if(confirm("¿Borrar este registro? (No afectará los acumulados globales)")){
                 DB.registros.splice(i, 1);
                 abrirHistorial();
                 actualizarUI();
