@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9.6 - REPARACIÓN TOTAL</title>
+    <title>LUCY ANATO V5.9.7 - RECONEXIÓN TOTAL</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -20,9 +20,9 @@
         .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
         
         .mini-resumen-container { margin-bottom: 15px; display: flex; flex-direction: column; gap: 4px; }
-        .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 4px 8px; font-size: 0.65em; }
-        .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; text-align: center; margin-top: 2px; }
-        .btn-reset-bar { float: right; color: #f00; font-weight: 900; cursor: pointer; border: 1px solid #f00; padding: 0 4px; border-radius: 3px; }
+        .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 6px 8px; font-size: 0.7em; }
+        .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; text-align: center; margin-top: 4px; }
+        .btn-reset-bar { float: right; color: #f00; font-weight: 900; cursor: pointer; border: 1px solid #f00; padding: 0 4px; border-radius: 3px; font-size: 0.8em; }
 
         #extra-float { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
         .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
@@ -36,7 +36,7 @@
         .btn-stop { background: #f00; color: #fff; }
 
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
-        .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; position: relative; }
+        .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; position: relative; font-size: 0.9em; }
         .btn-close { background: #f00; color: #fff; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; border: none; margin-top: 10px; }
         
         #whatsapp-box { background: #075E54; padding: 10px; border-radius: 10px; margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
@@ -51,8 +51,8 @@
         <div class="extra-grid">
             <div><small>KM</small><br><span id="ex-km">0.000</span></div>
             <div><small>TIEMPO</small><br><span id="ex-time">00:00</span></div>
-            <div><small>GAS</small><br><span id="ex-gas">0.000</span></div>
-            <div><small>USD</small><br><span id="ex-money">0.00</span></div>
+            <div><small>GAS (L)</small><br><span id="ex-gas">0.000</span></div>
+            <div><small>USD ($)</small><br><span id="ex-money">0.00</span></div>
         </div>
     </div>
 
@@ -87,7 +87,6 @@
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00; color:#000;">PAUSA ⏸</button>
     </div>
 
-    <!-- MODAL HISTORIAL -->
     <div id="pantalla-historial" class="full-modal">
         <h2 style="color:#0f0; border-bottom: 2px solid #0f0;">📊 REGISTRO Y RESUMEN</h2>
         <div class="mini-resumen-container" id="contenedor-resumen"></div>
@@ -95,7 +94,6 @@
         <button class="btn-close" onclick="cerrarModales()">VOLVER AL MAPA</button>
     </div>
 
-    <!-- MODAL FUEL -->
     <div id="modal-fuel" class="full-modal">
         <h2>⛽ AJUSTAR TANQUE</h2>
         <input type="number" id="input-fuel" step="0.1" style="width:100%; padding:20px; font-size:2.5em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center;">
@@ -103,7 +101,6 @@
         <button class="btn-close" onclick="cerrarModales()">CANCELAR</button>
     </div>
 
-    <!-- MODAL CALIBRAR -->
     <div id="modal-calibrar" class="full-modal">
         <h2>🔧 CALIBRACIÓN MOTOR</h2>
         <p>Factor actual: <b id="current-factor" style="color:#0f0;"></b></p>
@@ -112,7 +109,6 @@
         <button class="btn-close" onclick="cerrarModales()">CERRAR</button>
     </div>
 
-    <!-- MODAL GPS / WHATSAPP -->
     <div id="modal-gps" class="full-modal">
         <h2>📍 UBICACIÓN CLIENTE</h2>
         <div id="whatsapp-box">
@@ -130,8 +126,7 @@
         let layerPines = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        // BASE DE DATOS UNIFICADA EN MINÚSCULAS
-        let DB = JSON.parse(localStorage.getItem('lucy_v59_final')) || {
+        let DB = JSON.parse(localStorage.getItem('lucy_v59_repaired')) || {
             registros: [], factor: 0.05, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0}, 
             quince: {km:0, time:0, gas:0, money:0}, 
@@ -163,7 +158,7 @@
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
             
-            localStorage.setItem('lucy_v59_final', JSON.stringify(DB));
+            localStorage.setItem('lucy_v59_repaired', JSON.stringify(DB));
         }
 
         function iniciarCronometro(){
@@ -223,25 +218,24 @@
         }, null, {enableHighAccuracy:true});
 
         function finalizarYGuardar(){
-            // CAPTURA DE DATOS FINAL (SOLDADURA REFORZADA)
             let cTotal = dTotal * DB.factor;
             let mTotal = cTotal * 0.5;
-            let tFinalParaGuardar = tTotal; 
+            let tiempoParaGuardar = tTotal; 
 
-            // INYECCIÓN EN ACUMULADORES (7, 15, 30 días)
+            // PUENTE REFORZADO A LOS 3 RELOJES HISTÓRICOS
             ['siete', 'quince', 'mes'].forEach(periodo => {
-                DB[periodo].km += dTotal;
-                DB[periodo].time += tFinalParaGuardar; // Aquí se guarda la suma real
-                DB[periodo].gas += cTotal;
-                DB[periodo].money += mTotal;
+                DB[periodo].km = (DB[periodo].km || 0) + dTotal;
+                DB[periodo].time = (DB[periodo].time || 0) + tiempoParaGuardar;
+                DB[periodo].gas = (DB[periodo].gas || 0) + cTotal;
+                DB[periodo].money = (DB[periodo].money || 0) + mTotal;
             });
 
-            // GUARDAR EN EL HISTORIAL (FICHA DEL CLIENTE)
+            // RESTAURACIÓN DE GASOLINA Y DÓLARES EN LA FICHA DEL CLIENTE
             DB.registros.unshift({
                 cliente: clienteActual, 
                 fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), 
-                time: formatTime(tFinalParaGuardar), // Ahora sí se conecta al informe
+                time: formatTime(tiempoParaGuardar), 
                 gas: cTotal.toFixed(3), 
                 money: mTotal.toFixed(2),
                 extra: { km: dExtra.toFixed(3), time: formatTime(tExtra) }
@@ -261,7 +255,7 @@
         }
 
         function abrirHistorial(){
-            // RENDER DE RESÚMENES (7, 15, 30)
+            // RENDER DE RESÚMENES (7, 15, 30) CON TIEMPO RECONECTADO
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
                 <div class="barra-resumen">
                     <span class="btn-reset-bar" onclick="resetAcumulado('${p}')">RESET</span>
@@ -269,18 +263,18 @@
                     <div class="grid-4-jinetes">
                         <div>KM<br><b style="color:#0f0;">${DB[p].km.toFixed(2)}</b></div>
                         <div>TIME<br><b style="color:#0f0;">${formatTime(DB[p].time).substring(0,5)}</b></div>
-                        <div>GAS<br><b style="color:#0f0;">${DB[p].gas.toFixed(2)}</b></div>
-                        <div>USD<br><b style="color:#0f0;">$${DB[p].money.toFixed(2)}</b></div>
+                        <div>GAS (L)<br><b style="color:#0f0;">${DB[p].gas.toFixed(2)}</b></div>
+                        <div>USD ($)<br><b style="color:#0f0;">$${DB[p].money.toFixed(2)}</b></div>
                     </div>
                 </div>
             `).join('');
 
-            // RENDER DE REGISTROS INDIVIDUALES
+            // RENDER DE FICHAS CON KM, TIEMPO, GASOLINA Y DÓLARES
             document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span style="float:right; color:#f00;" onclick="borrarReg(${i})">🗑️</span>
                     <b style="color:#0f0;">${r.cliente}</b> <small style="color:#888;">${r.fecha}</small><br>
-                    Total: ${r.km}km | ${r.time} | $${r.money}<br>
+                    Total: <b>${r.km}km</b> | <b>${r.time}</b> | <b>${r.gas} L</b> | <b>$${r.money}</b><br>
                     <small style="color:#f0f;">🚀 Extra: ${r.extra.km}km | ${r.extra.time}</small>
                 </div>
             `).join('');
