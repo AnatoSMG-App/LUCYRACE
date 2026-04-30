@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9.2 - CONEXIÓN TOTAL</title>
+    <title>LUCY ANATO V5.9.3 - SOLUCIÓN TIEMPO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -81,36 +81,37 @@
                 <span class="btn-reset-bar" onclick="resetAcumulado('siete')">RESET</span>
                 <b style="color:#fff">RESUMEN 7 DÍAS:</b>
                 <div class="grid-4-jinetes">
-                    <div>KM<br><b id="res-7-km">0.000</b></div>
-                    <div>TIME<br><b id="res-7-TIME">00:00</b></div>
-                    <div>GAS<br><b id="res-7-gas">0.000</b></div>
-                    <div>USD<br><b id="res-7-money">$0.00</b></div>
+                    <div>KM<br><b id="res-siete-km">0.000</b></div>
+                    <div>TIME<br><b id="res-siete-time">00:00</b></div>
+                    <div>GAS<br><b id="res-siete-gas">0.000</b></div>
+                    <div>USD<br><b id="res-siete-money">$0.00</b></div>
                 </div>
             </div>
             <div class="barra-resumen">
                 <span class="btn-reset-bar" onclick="resetAcumulado('quince')">RESET</span>
                 <b style="color:#fff">RESUMEN 15 DÍAS:</b>
                 <div class="grid-4-jinetes">
-                    <div>KM<br><b id="res-15-km">0.000</b></div>
-                    <div>TIME<br><b id="res-15-TIME">00:00</b></div>
-                    <div>GAS<br><b id="res-15-gas">0.000</b></div>
-                    <div>USD<br><b id="res-15-money">$0.00</b></div>
+                    <div>KM<br><b id="res-quince-km">0.000</b></div>
+                    <div>TIME<br><b id="res-quince-time">00:00</b></div>
+                    <div>GAS<br><b id="res-quince-gas">0.000</b></div>
+                    <div>USD<br><b id="res-quince-money">$0.00</b></div>
                 </div>
             </div>
             <div class="barra-resumen">
                 <span class="btn-reset-bar" onclick="resetAcumulado('mes')">RESET</span>
                 <b style="color:#fff">RESUMEN 30 DÍAS:</b>
                 <div class="grid-4-jinetes">
-                    <div>KM<br><b id="res-30-km">0.000</b></div>
-                    <div>TIME<br><b id="res-30-TIME">00:00</b></div>
-                    <div>GAS<br><b id="res-30-gas">0.000</b></div>
-                    <div>USD<br><b id="res-30-money">$0.00</b></div>
+                    <div>KM<br><b id="res-mes-km">0.000</b></div>
+                    <div>TIME<br><b id="res-mes-time">00:00</b></div>
+                    <div>GAS<br><b id="res-mes-gas">0.000</b></div>
+                    <div>USD<br><b id="res-mes-money">$0.00</b></div>
                 </div>
             </div>
         </div>
         <div id="lista-registros"></div>
         <button class="btn-close" onclick="cerrarModales()">VOLVER AL MAPA</button>
     </div>
+    <!-- ... Resto de modales (fuel y calibrar) igual que el original ... -->
     <div id="modal-fuel" class="full-modal">
         <h2>⛽ AJUSTAR TANQUE</h2>
         <input type="number" id="input-fuel" step="0.1" style="width:100%; padding:20px; font-size:2.5em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center;">
@@ -132,9 +133,10 @@
         let layerPines = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        let DB = JSON.parse(localStorage.getItem('lucy_v59')) || {
+        // BASE DE DATOS UNIFICADA (Todo en minúsculas)
+        let DB = JSON.parse(localStorage.getItem('lucy_v59_final')) || {
             registros: [], factor: 0.05, fuel: 15.0,
-            siete: {km:0, TIME:0, gas:0, money:0}, 
+            siete: {km:0, time:0, gas:0, money:0}, 
             quince: {km:0, time:0, gas:0, money:0}, 
             mes: {km:0, time:0, gas:0, money:0}
         };
@@ -146,12 +148,15 @@
             document.getElementById('val-km').innerHTML = dTotal.toFixed(3) + '<span class="unit-small">KM</span>';
             document.getElementById('val-time').innerText = formatTime(tTotal);
             document.getElementById('val-fuel').innerHTML = DB.fuel.toFixed(2) + '<span class="unit-small">L</span>';
+            
             if(DB.fuel <= 4.0) document.getElementById('panel-fuel').classList.add('fuel-alert');
             else document.getElementById('panel-fuel').classList.remove('fuel-alert');
+            
             let consTotal = dTotal * DB.factor;
             document.getElementById('val-gas-trip').innerText = consTotal.toFixed(3) + " L";
             document.getElementById('val-money-route').innerText = "$" + (consTotal * 0.5).toFixed(2);
             document.getElementById('val-money-total').innerText = "$" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
+
             if(extraActivo || dExtra > 0){
                 document.getElementById('extra-float').style.display = 'block';
                 document.getElementById('ex-km').innerText = dExtra.toFixed(3);
@@ -160,13 +165,15 @@
                 document.getElementById('ex-gas').innerText = cEx.toFixed(3);
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
+
+            // ACTUALIZACIÓN DE PANELES DE RESUMEN (Aquí estaba el error de IDs)
             ['siete', 'quince', 'mes'].forEach(periodo => {
                 document.getElementById(`res-${periodo}-km`).innerText = DB[periodo].km.toFixed(3);
                 document.getElementById(`res-${periodo}-time`).innerText = formatTime(DB[periodo].time).substring(0,5);
                 document.getElementById(`res-${periodo}-gas`).innerText = DB[periodo].gas.toFixed(3);
                 document.getElementById(`res-${periodo}-money`).innerText = "$" + DB[periodo].money.toFixed(2);
             });
-            localStorage.setItem('lucy_v59', JSON.stringify(DB));
+            localStorage.setItem('lucy_v59_final', JSON.stringify(DB));
         }
 
         function controlRuta(){
@@ -228,6 +235,8 @@
         function finalizarYGuardar(){
             let cTotal = dTotal * DB.factor;
             let mTotal = cTotal * 0.5;
+            
+            // GUARDAR EN HISTORIAL
             let reg = {
                 cliente: clienteActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), time: formatTime(tTotal), 
@@ -238,9 +247,15 @@
                 }
             };
             DB.registros.unshift(reg);
+
+            // SOLDADURA DEL TIEMPO: SUMAR A LOS 3 PANELES
             [DB.siete, DB.quince, DB.mes].forEach(obj => {
-                obj.km += dTotal; obj.time += tTotal; obj.gas += cTotal; obj.money += mTotal;
+                obj.km += dTotal; 
+                obj.time += tTotal; // Se suma como segundos
+                obj.gas += cTotal; 
+                obj.money += mTotal;
             });
+
             if(ultimaPos && !layerPines.getLayers().length) {
                 L.marker(ultimaPos).addTo(layerPines).bindPopup(clienteActual + " $" + mTotal.toFixed(2)).openPopup();
             }
@@ -309,12 +324,14 @@
             if(n) { dTotal = parseFloat(n); actualizarUI(); }
         }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
+        
         function formatTime(s){
             let h = Math.floor(s / 3600);
             let m = Math.floor((s % 3600) / 60);
             let sec = s % 60;
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
+        
         function abrirGPS(){
             let u = prompt("Pegar ubicación de WhatsApp para calcular:");
             if(u) alert("Calculando distancia... (Función GPS activa)");
