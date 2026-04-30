@@ -15,12 +15,10 @@
         .unit-small { font-size: 0.5em; margin-left: 3px; color: #aaa; }
         .txt-label { font-size: 0.7em; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 4px; display: block; }
         
-        /* PANEL EXTRA CON 4 JINETES ACTIVOS */
         #extra-float { position: absolute; top: 160px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 12px; border-radius: 15px; display: none; z-index: 3000; width: 85%; box-shadow: 0 0 20px #f0f; text-align: center; }
         .extra-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
         .extra-item { font-size: 0.9em; font-weight: 900; }
 
-        /* ALERTA PALPITANTE */
         @keyframes pulse-red { 0% { box-shadow: 0 0 5px #f00; border-color: #f00; } 50% { box-shadow: 0 0 30px #f00; border-color: #ff0000; transform: scale(1.02); } 100% { box-shadow: 0 0 5px #f00; border-color: #f00; } }
         .alert-active { animation: pulse-red 0.8s infinite; color: #f00 !important; }
 
@@ -81,9 +79,8 @@
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00;">PAUSAR ⏸</button>
     </div>
 
-    <!-- MODALES -->
     <div id="modal-fuel" class="full-modal">
-        <h2 style="text-align:center; color:#0ff;">CARGA DE GASOLINA (MAX 15L)</h2>
+        <h2 style="text-align:center; color:#0ff;">CARGA DE GASOLINA</h2>
         <div style="text-align:center; margin:20px 0;">
             <input type="number" id="num-fuel" step="0.1" style="background:#222; color:#fff; border:1px solid #0ff; padding:15px; border-radius:10px; width:100px; font-size:1.5em;" oninput="sincronizarFuel(this.value, 'slider')">
             <input type="range" id="slider-fuel" min="0" max="15" step="0.1" style="width:100%; margin-top:20px;" oninput="sincronizarFuel(this.value, 'num')">
@@ -138,7 +135,6 @@
             document.getElementById('val-money-total').innerText = "$" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
             document.getElementById('val-money-route').innerText = "$" + (consumoTrip * 0.5).toFixed(2);
 
-            // EFECTO PALPITANTE 4L
             const panelF = document.getElementById('panel-fuel');
             if(DB.fuel <= 4.0) panelF.classList.add('alert-active');
             else panelF.classList.remove('alert-active');
@@ -163,6 +159,13 @@
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     DB.fuel -= (dist * DB.factor);
+                    
+                    // SUMA EN TIEMPO REAL A LOS 7, 15 Y 30 DÍAS
+                    ['sum7', 'sum15', 'sum30'].forEach(s => {
+                        DB[s].km += dist;
+                        DB[s].gas += (dist * DB.factor);
+                        DB[s].money += (dist * DB.factor * 0.5);
+                    });
                     actualizarUI();
                 }
             }
@@ -175,7 +178,13 @@
                 document.getElementById('btn-main').innerText = "FINALIZAR RUTA 🏁";
                 document.getElementById('btn-main').className = "btn-main btn-stop";
                 document.getElementById('btn-pause').style.display = "block";
-                crono = setInterval(() => { tTotal++; if(extraActivo) tExtra++; actualizarUI(); }, 1000);
+                crono = setInterval(() => { 
+                    tTotal++; 
+                    if(extraActivo) tExtra++; 
+                    // SUMA TIEMPO EN TIEMPO REAL A LOS RESÚMENES
+                    ['sum7', 'sum15', 'sum30'].forEach(s => { DB[s].time++; });
+                    actualizarUI(); 
+                }, 1000);
             } else {
                 if(confirm("¿Guardar registro de " + clienteActual + "?")){ finalizarYGuardar(); }
             }
@@ -195,7 +204,12 @@
             } else {
                 estado = "rodando";
                 document.getElementById('btn-pause').innerText = "PAUSAR ⏸";
-                crono = setInterval(() => { tTotal++; if(extraActivo) tExtra++; actualizarUI(); }, 1000);
+                crono = setInterval(() => { 
+                    tTotal++; 
+                    if(extraActivo) tExtra++; 
+                    ['sum7', 'sum15', 'sum30'].forEach(s => { DB[s].time++; });
+                    actualizarUI(); 
+                }, 1000);
             }
         }
 
@@ -212,11 +226,8 @@
             let reg = {
                 id: Date.now(), cliente: clienteActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), time: formatTime(tTotal), gas: cons.toFixed(2), money: (cons*0.5).toFixed(2),
-                extra: extraActivo ? {km: dExtra.toFixed(3), gas: (dExtra*DB.factor).toFixed(2), money: (dExtra*DB.factor*0.5).toFixed(2)} : null
+                extra: extraActivo ? {km: dExtra.toFixed(3), time: formatTime(tExtra).substring(3), gas: (dExtra*DB.factor).toFixed(2), money: (dExtra*DB.factor*0.5).toFixed(2)} : null
             };
-            ['sum7', 'sum15', 'sum30'].forEach(s => {
-                DB[s].km += dTotal; DB[s].time += tTotal; DB[s].gas += cons; DB[s].money += (cons*0.5);
-            });
             DB.registros.unshift(reg);
             resetTodo();
         }
@@ -250,7 +261,7 @@
                         <span>KM: ${r.km}</span> <span>Gas: ${r.gas}L</span>
                         <span>Time: ${r.time}</span> <span style="color:#0f0">$${r.money}</span>
                     </div>
-                    ${r.extra ? `<div style="color:#f0f; font-size:0.8em; border-top:1px solid #333; margin-top:5px; padding-top:5px;">🚀 EXTRA: ${r.extra.km}KM | ${r.extra.gas}L | $${r.extra.money}</div>` : ''}
+                    ${r.extra ? `<div style="color:#f0f; font-size:0.8em; border-top:1px solid #333; margin-top:5px; padding-top:5px;">🚀 EXTRA: ${r.extra.km}KM | ${r.extra.time} | ${r.extra.gas}L | $${r.extra.money}</div>` : ''}
                 </div>`).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
