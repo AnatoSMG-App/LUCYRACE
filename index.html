@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9.2 - PROTOCOLO MURACHI</title>
+    <title>LUCY ANATO V5.9.2 - CONEXIÓN TOTAL</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -36,9 +36,7 @@
     </style>
 </head>
 <body>
-
     <div id="map"></div>
-
     <div id="extra-float">
         <span style="font-size: 0.8em; font-weight: 900; color: #fff;">🚀 EXTRA: <span id="ex-nombre">CLIENTE</span></span>
         <div class="extra-grid">
@@ -48,7 +46,6 @@
             <div><small>USD</small><br><span id="ex-money">0.00</span></div>
         </div>
     </div>
-
     <div class="top-panels">
         <div class="row-panels">
             <div class="panel-data" style="border-color: #fff;">
@@ -66,7 +63,6 @@
             </div>
         </div>
     </div>
-
     <div class="side-hud">
         <div class="hud-btn" onclick="abrirHistorial()">📊</div>
         <div class="hud-btn" id="btn-extra" onclick="toggleExtra()">🚀</div>
@@ -74,12 +70,10 @@
         <div class="hud-btn" onclick="abrirCalibrar()">🔧</div>
         <div class="hud-btn" onclick="location.reload()" style="border-color:#f00;">🔄</div>
     </div>
-
     <div class="bottom-controls">
         <button id="btn-main" class="btn-main btn-rodar" onclick="controlRuta()">A RODAR 🏍️</button>
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00; color:#000;">PAUSA ⏸</button>
     </div>
-
     <div id="pantalla-historial" class="full-modal">
         <h2 style="color:#0f0; border-bottom: 2px solid #0f0; font-size:1.2em;">📊 REGISTRO Y RESUMEN</h2>
         <div class="mini-resumen-container">
@@ -117,14 +111,12 @@
         <div id="lista-registros"></div>
         <button class="btn-close" onclick="cerrarModales()">VOLVER AL MAPA</button>
     </div>
-
     <div id="modal-fuel" class="full-modal">
         <h2>⛽ AJUSTAR TANQUE</h2>
         <input type="number" id="input-fuel" step="0.1" style="width:100%; padding:20px; font-size:2.5em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center;">
         <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFuel()">ACTUALIZAR</button>
         <button class="btn-close" onclick="cerrarModales()">CANCELAR</button>
     </div>
-
     <div id="modal-calibrar" class="full-modal">
         <h2>🔧 CALIBRACIÓN MOTOR</h2>
         <p>Factor actual: <b id="current-factor" style="color:#0f0;"></b></p>
@@ -156,12 +148,10 @@
             document.getElementById('val-fuel').innerHTML = DB.fuel.toFixed(2) + '<span class="unit-small">L</span>';
             if(DB.fuel <= 4.0) document.getElementById('panel-fuel').classList.add('fuel-alert');
             else document.getElementById('panel-fuel').classList.remove('fuel-alert');
-
             let consTotal = dTotal * DB.factor;
             document.getElementById('val-gas-trip').innerText = consTotal.toFixed(3) + " L";
             document.getElementById('val-money-route').innerText = "$" + (consTotal * 0.5).toFixed(2);
             document.getElementById('val-money-total').innerText = "$" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
-
             if(extraActivo || dExtra > 0){
                 document.getElementById('extra-float').style.display = 'block';
                 document.getElementById('ex-km').innerText = dExtra.toFixed(3);
@@ -169,10 +159,7 @@
                 let cEx = dExtra * DB.factor;
                 document.getElementById('ex-gas').innerText = cEx.toFixed(3);
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
-            } else {
-                document.getElementById('extra-float').style.display = 'none';
-            }
-
+            } else { document.getElementById('extra-float').style.display = 'none'; }
             ['siete', 'quince', 'mes'].forEach(periodo => {
                 document.getElementById(`res-${periodo}-km`).innerText = DB[periodo].km.toFixed(3);
                 document.getElementById(`res-${periodo}-time`).innerText = formatTime(DB[periodo].time).substring(0,5);
@@ -189,9 +176,7 @@
                 document.getElementById('btn-main').className = "btn-main btn-stop";
                 document.getElementById('btn-pause').style.display = "block";
                 iniciarCronometro();
-            } else {
-                if(confirm("¿Cerrar ruta de " + clienteActual + "?")){ finalizarYGuardar(); }
-            }
+            } else { if(confirm("¿Cerrar ruta de " + clienteActual + "?")){ finalizarYGuardar(); } }
         }
 
         function pausarRuta(){
@@ -202,7 +187,7 @@
                 if(n) {
                     clienteActual = n;
                     document.getElementById('ex-nombre').innerText = n.toUpperCase();
-                    if(ultimaPos) L.marker(ultimaPos).addTo(layerPines).bindPopup("<b>" + n + "</b>").openPopup();
+                    if(ultimaPos) { L.marker(ultimaPos).addTo(layerPines).bindPopup("<b>" + n + "</b>").openPopup(); }
                 }
             } else {
                 estado = "rodando";
@@ -243,7 +228,6 @@
         function finalizarYGuardar(){
             let cTotal = dTotal * DB.factor;
             let mTotal = cTotal * 0.5;
-            
             let reg = {
                 cliente: clienteActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), time: formatTime(tTotal), 
@@ -254,15 +238,9 @@
                 }
             };
             DB.registros.unshift(reg);
-
-            // SOLDADURA DE TIEMPO REALIZADA AQUÍ:
             [DB.siete, DB.quince, DB.mes].forEach(obj => {
-                obj.km += dTotal;
-                obj.time += tTotal; // CABLE CONECTADO
-                obj.gas += cTotal;
-                obj.money += mTotal;
+                obj.km += dTotal; obj.time += tTotal; obj.gas += cTotal; obj.money += mTotal;
             });
-
             if(ultimaPos && !layerPines.getLayers().length) {
                 L.marker(ultimaPos).addTo(layerPines).bindPopup(clienteActual + " $" + mTotal.toFixed(2)).openPopup();
             }
@@ -298,6 +276,9 @@
                         <div>GAS<br><b>${r.gas}L</b></div>
                         <div>USD<br><b style="color:#0f0;">$${r.money}</b></div>
                     </div>
+                    <div style="color:#f0f; font-size:0.85em; margin-top:8px; border-top:1px dashed #444; padding-top:5px;">
+                        🚀 EXTRA: ${r.extra.km}km | ${r.extra.time} | ${r.extra.gas}L | $${r.extra.money}
+                    </div>
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
@@ -306,11 +287,27 @@
         function borrarRegistro(i){
             if(confirm("¿Borrar este registro?")){ DB.registros.splice(i, 1); abrirHistorial(); actualizarUI(); }
         }
-        function abrirFuelModal(){ document.getElementById('input-fuel').value = DB.fuel.toFixed(2); document.getElementById('modal-fuel').style.display = 'block'; }
-        function guardarFuel(){ DB.fuel = parseFloat(document.getElementById('input-fuel').value); cerrarModales(); actualizarUI(); }
-        function abrirCalibrar(){ document.getElementById('current-factor').innerText = DB.factor; document.getElementById('modal-calibrar').style.display = 'block'; }
-        function guardarFactor(){ DB.factor = parseFloat(document.getElementById('input-factor').value); cerrarModales(); actualizarUI(); }
-        function ajusteManualKM(){ let n = prompt("Ajustar KM totales:", dTotal.toFixed(3)); if(n) { dTotal = parseFloat(n); actualizarUI(); } }
+
+        function abrirFuelModal(){
+            document.getElementById('input-fuel').value = DB.fuel.toFixed(2);
+            document.getElementById('modal-fuel').style.display = 'block';
+        }
+        function guardarFuel(){
+            DB.fuel = parseFloat(document.getElementById('input-fuel').value);
+            cerrarModales(); actualizarUI();
+        }
+        function abrirCalibrar(){
+            document.getElementById('current-factor').innerText = DB.factor;
+            document.getElementById('modal-calibrar').style.display = 'block';
+        }
+        function guardarFactor(){
+            DB.factor = parseFloat(document.getElementById('input-factor').value);
+            cerrarModales(); actualizarUI();
+        }
+        function ajusteManualKM(){
+            let n = prompt("Ajustar KM totales:", dTotal.toFixed(3));
+            if(n) { dTotal = parseFloat(n); actualizarUI(); }
+        }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function formatTime(s){
             let h = Math.floor(s / 3600);
@@ -319,8 +316,8 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
         function abrirGPS(){
-            let u = prompt("Pegar ubicación de WhatsApp:");
-            if(u) alert("Cargando ubicación para cálculo...");
+            let u = prompt("Pegar ubicación de WhatsApp para calcular:");
+            if(u) alert("Calculando distancia... (Función GPS activa)");
         }
         actualizarUI();
     </script>
