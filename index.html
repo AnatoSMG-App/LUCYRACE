@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9.7 - RECONEXIÓN TOTAL</title>
+    <title>LUCY ANATO V5.9.8 - FULL RECONEXIÓN</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -40,7 +40,7 @@
         .btn-close { background: #f00; color: #fff; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; border: none; margin-top: 10px; }
         
         #whatsapp-box { background: #075E54; padding: 10px; border-radius: 10px; margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
-        #whatsapp-box input { padding: 10px; border-radius: 5px; border: none; background: #fff; color: #000; }
+        #whatsapp-box input { padding: 10px; border-radius: 5px; border: none; background: #fff; color: #000; width: 90%; }
     </style>
 </head>
 <body>
@@ -103,9 +103,13 @@
 
     <div id="modal-calibrar" class="full-modal">
         <h2>🔧 CALIBRACIÓN MOTOR</h2>
-        <p>Factor actual: <b id="current-factor" style="color:#0f0;"></b></p>
-        <input type="number" id="input-factor" step="0.001" style="width:100%; padding:20px; font-size:2em; background:#111; color:#fff;">
-        <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFactor()">CALIBRAR</button>
+        <p>Litros a descontar ahora:</p>
+        <input type="number" id="input-descuento-litros" value="1.0" step="0.1" style="width:100%; padding:20px; font-size:2em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center;">
+        <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="calibrarYRestar()">CALIBRAR Y DESCONTAR</button>
+        <hr style="border: 1px solid #333; margin: 20px 0;">
+        <p>Factor de consumo (Actual: <b id="current-factor" style="color:#0f0;"></b>):</p>
+        <input type="number" id="input-factor" step="0.001" style="width:100%; padding:10px; font-size:1.2em; background:#111; color:#fff;">
+        <button class="btn-main" style="margin-top:10px; width:100%; background:#444;" onclick="guardarFactor()">CAMBIAR FACTOR</button>
         <button class="btn-close" onclick="cerrarModales()">CERRAR</button>
     </div>
 
@@ -114,7 +118,7 @@
         <div id="whatsapp-box">
             <label>Pegar URL de Google Maps:</label>
             <input type="text" id="url-maps" placeholder="https://maps.app.goo.gl/...">
-            <button class="btn-main btn-rodar" onclick="procesarUbicacion()">IR AL PUNTO</button>
+            <button class="btn-main btn-rodar" onclick="procesarUbicacion()">MARCAR EN MAPA</button>
         </div>
         <button class="btn-close" onclick="cerrarModales()">CANCELAR</button>
     </div>
@@ -124,6 +128,7 @@
         let map = L.map('map', {zoomControl: false}).setView([10.174, -67.915], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         let layerPines = L.layerGroup().addTo(map);
+        let layerDestino = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
         let DB = JSON.parse(localStorage.getItem('lucy_v59_repaired')) || {
@@ -159,6 +164,40 @@
             } else { document.getElementById('extra-float').style.display = 'none'; }
             
             localStorage.setItem('lucy_v59_repaired', JSON.stringify(DB));
+        }
+
+        // --- FUNCION CLAVE: CALIBRAR Y RESTAR LITROS ---
+        function calibrarYRestar() {
+            let litrosARestar = parseFloat(document.getElementById('input-descuento-litros').value);
+            if(!isNaN(litrosARestar) && litrosARestar > 0) {
+                DB.fuel -= litrosARestar;
+                if(DB.fuel < 0) DB.fuel = 0;
+                actualizarUI();
+                alert("¡Calibrado! Se restaron " + litrosARestar + "L del tanque.");
+                cerrarModales();
+            } else {
+                alert("Por favor pon un número válido.");
+            }
+        }
+
+        // --- FUNCION GPS: PROCESAR LINK ---
+        function procesarUbicacion() {
+            let url = document.getElementById('url-maps').value;
+            // Intento de extraer coordenadas de links comunes de Maps
+            let regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+            let match = url.match(regex);
+            
+            if(match) {
+                let lat = parseFloat(match[1]);
+                let lon = parseFloat(match[2]);
+                layerDestino.clearLayers();
+                L.marker([lat, lon], {icon: L.divIcon({html: '📍', className: 'dest-icon', iconSize: [30,30]})})
+                 .addTo(layerDestino).bindPopup("<b>DESTINO CLIENTE</b>").openPopup();
+                map.setView([lat, lon], 16);
+                cerrarModales();
+            } else {
+                alert("Pega un link válido que contenga coordenadas (ej: @10.123,-67.123). Si es un link corto, ábrelo en el navegador primero.");
+            }
         }
 
         function iniciarCronometro(){
@@ -207,7 +246,7 @@
             marker.setLatLng(p);
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
-                if(dist > 0.0005){
+                if(dist > 0.001){ // Umbral de 1 metro para evitar saltos GPS
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     DB.fuel -= (dist * DB.factor);
@@ -222,7 +261,6 @@
             let mTotal = cTotal * 0.5;
             let tiempoParaGuardar = tTotal; 
 
-            // PUENTE REFORZADO A LOS 3 RELOJES HISTÓRICOS
             ['siete', 'quince', 'mes'].forEach(periodo => {
                 DB[periodo].km = (DB[periodo].km || 0) + dTotal;
                 DB[periodo].time = (DB[periodo].time || 0) + tiempoParaGuardar;
@@ -230,7 +268,6 @@
                 DB[periodo].money = (DB[periodo].money || 0) + mTotal;
             });
 
-            // RESTAURACIÓN DE GASOLINA Y DÓLARES EN LA FICHA DEL CLIENTE
             DB.registros.unshift({
                 cliente: clienteActual, 
                 fecha: new Date().toLocaleString(),
@@ -255,7 +292,6 @@
         }
 
         function abrirHistorial(){
-            // RENDER DE RESÚMENES (7, 15, 30) CON TIEMPO RECONECTADO
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
                 <div class="barra-resumen">
                     <span class="btn-reset-bar" onclick="resetAcumulado('${p}')">RESET</span>
@@ -269,7 +305,6 @@
                 </div>
             `).join('');
 
-            // RENDER DE FICHAS CON KM, TIEMPO, GASOLINA Y DÓLARES
             document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span style="float:right; color:#f00;" onclick="borrarReg(${i})">🗑️</span>
@@ -290,10 +325,10 @@
 
         function resetAcumulado(p){ if(confirm("¿Resetear "+p+"?")){ DB[p]={km:0,time:0,gas:0,money:0}; abrirHistorial(); } }
         function borrarReg(i){ if(confirm("¿Borrar registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
-        function abrirFuelModal(){ document.getElementById('modal-fuel').style.display = 'block'; }
+        function abrirFuelModal(){ document.getElementById('input-fuel').value = DB.fuel; document.getElementById('modal-fuel').style.display = 'block'; }
         function guardarFuel(){ DB.fuel = parseFloat(document.getElementById('input-fuel').value); cerrarModales(); actualizarUI(); }
         function abrirCalibrar(){ document.getElementById('current-factor').innerText = DB.factor; document.getElementById('modal-calibrar').style.display = 'block'; }
-        function guardarFactor(){ DB.factor = parseFloat(document.getElementById('input-factor').value); cerrarModales(); }
+        function guardarFactor(){ DB.factor = parseFloat(document.getElementById('input-factor').value); cerrarModales(); actualizarUI(); }
         function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function ajusteManualKM(){ let n = prompt("KM:", dTotal.toFixed(3)); if(n) dTotal = parseFloat(n); actualizarUI(); }
