@@ -3,42 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.6 - PROTOCOLO MURACHI</title>
+    <title>LUCY ANATO V5.7 - PROTOCOLO MURACHI</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
-        .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; }
+        
+        .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
-        .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 15px; padding: 12px; flex: 1; box-shadow: 0 0 15px rgba(0,255,0,0.3); }
+        .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
         
-        /* Efecto Candela 4L */
-        @keyframes alert-red { 0% { border-color: #f00; box-shadow: 0 0 20px #f00; } 50% { border-color: #300; } 100% { border-color: #f00; } }
-        .fuel-alert { animation: alert-red 1s infinite; }
+        /* Alerta Roja 4L */
+        @keyframes alert-fuel { 0% { background: #600; border-color: #f00; } 50% { background: #000; border-color: #300; } 100% { background: #600; border-color: #f00; } }
+        .fuel-alert { animation: alert-fuel 0.8s infinite !important; }
 
-        .val-big { font-size: 1.8em; font-weight: 900; display: block; line-height: 1; color: #0f0; }
-        .unit-small { font-size: 0.5em; margin-left: 3px; color: #aaa; }
-        .txt-label { font-size: 0.7em; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        
+        .val-big { font-size: 1.5em; font-weight: 900; color: #0f0; line-height: 1; }
+        .unit-small { font-size: 0.5em; color: #aaa; margin-left: 2px; }
+        .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
+
+        /* Barras de Resumen Horizontales y Pequeñas */
+        .mini-resumen-container { display: flex; flex-direction: column; gap: 4px; margin-top: 5px; }
+        .barra-resumen { display: flex; align-items: center; justify-content: space-between; background: rgba(20,20,20,0.9); border: 1px solid #444; border-radius: 5px; padding: 4px 10px; font-size: 0.75em; }
+        .barra-resumen b { color: #0f0; }
+
         /* Extra Flotante */
-        #extra-float { position: absolute; top: 180px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 12px; border-radius: 15px; display: none; z-index: 3000; width: 85%; text-align: center; box-shadow: 0 0 20px #f0f; }
-        .extra-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; font-size: 0.9em; font-weight: 900; }
+        #extra-float { position: absolute; top: 185px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 10px; border-radius: 12px; display: none; z-index: 3000; width: 88%; text-align: center; box-shadow: 0 0 15px #f0f; }
+        .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 5px; font-size: 0.75em; font-weight: 900; }
 
-        /* Controles */
-        .side-hud { position: absolute; right: 15px; bottom: 180px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
-        .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; }
-        .bottom-controls { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 92%; display: flex; gap: 10px; z-index: 1000; }
-        .btn-main { flex: 1; padding: 20px; border-radius: 18px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; }
+        /* Botones HUD */
+        .side-hud { position: absolute; right: 10px; bottom: 160px; display: flex; flex-direction: column; gap: 10px; z-index: 2000; }
+        .hud-btn { width: 50px; height: 50px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3em; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+
+        .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 94%; display: flex; gap: 10px; z-index: 1000; }
+        .btn-main { flex: 1; padding: 18px; border-radius: 15px; border: none; font-weight: 900; font-size: 0.9em; cursor: pointer; text-transform: uppercase; }
         .btn-rodar { background: #0f0; color: #000; }
         .btn-stop { background: #f00; color: #fff; }
 
         /* Modales */
-        .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
-        .resumen-block { background: #111; border: 2px solid #0f0; border-radius: 12px; padding: 15px; margin-bottom: 12px; border-left: 10px solid #0f0; }
-        .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
-        .card-hist { background: #1a1a1a; border-radius: 12px; padding: 12px; margin-bottom: 10px; border-left: 5px solid #0f0; position: relative; }
-        .btn-del { position: absolute; right: 10px; top: 10px; color: #f00; font-size: 1.2em; cursor: pointer; }
-        .btn-close { background: #f00; color: #fff; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; margin-top: 10px; border: none; }
+        .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
+        .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #0f0; position: relative; }
+        .btn-del { position: absolute; right: 10px; top: 10px; color: #f00; }
+        .btn-close { background: #f00; color: #fff; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; border: none; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -48,10 +53,10 @@
     <div id="extra-float">
         <span style="font-size: 0.8em; font-weight: 900;">🚀 EXTRA: <span id="ex-nombre">CLIENTE</span></span>
         <div class="extra-grid">
-            <div>KM: <span id="ex-km">0.000</span></div>
-            <div>Min: <span id="ex-time">00:00</span></div>
-            <div>Gas: <span id="ex-gas">0.000L</span></div>
-            <div>Paga: <span id="ex-money">$0.00</span></div>
+            <div><small>KM</small><br><span id="ex-km">0.000</span></div>
+            <div><small>MIN</small><br><span id="ex-time">00:00</span></div>
+            <div><small>GAS</small><br><span id="ex-gas">0.000</span></div>
+            <div><small>USD</small><br><span id="ex-money">0.00</span></div>
         </div>
     </div>
 
@@ -60,15 +65,28 @@
             <div class="panel-data" style="border-color: #fff;">
                 <span class="txt-label">⏱️ <span id="val-time">00:00:00</span></span>
                 <span class="val-big" id="val-km" onclick="ajusteManualKM()">0.000<span class="unit-small">KM</span></span>
-                <div style="display:flex; justify-content: space-between; margin-top:10px;">
-                    <span id="val-gas-trip" style="color:#00ffff; font-weight:bold; font-size:0.8em;">0.000 L</span>
-                    <span id="val-money-route" style="color:#0f0; font-weight:bold; font-size:0.8em;">$0.00</span>
+                <div style="display:flex; justify-content: space-between; margin-top:5px;">
+                    <span id="val-gas-trip" style="color:#00ffff; font-weight:bold; font-size:0.7em;">0.000 L</span>
+                    <span id="val-money-route" style="color:#0f0; font-weight:bold; font-size:0.7em;">$0.00</span>
                 </div>
             </div>
             <div class="panel-data" id="panel-fuel" onclick="abrirFuelModal()">
                 <span class="txt-label">⛽ TANQUE LONCIN</span>
                 <span class="val-big" id="val-fuel" style="color: #00ffff;">15.00<span class="unit-small">L</span></span>
-                <span id="val-money-total" style="font-size:0.7em; color:#0f0;">$7.50 Disp.</span>
+                <span id="val-money-total" style="font-size:0.65em; color:#0f0; font-weight:bold;">$0.00 Disp.</span>
+            </div>
+        </div>
+
+        <!-- Barras de Resumen Optimizadas -->
+        <div class="mini-resumen-container">
+            <div class="barra-resumen" id="bar-7">
+                <span>SEMANA (7d):</span> <span><b id="res-7-km">0.000</b>km | <b id="res-7-gas">0.00</b>L | <b id="res-7-money">$0.00</b></span>
+            </div>
+            <div class="barra-resumen" id="bar-15">
+                <span>QUINCENA (15d):</span> <span><b id="res-15-km">0.000</b>km | <b id="res-15-gas">0.00</b>L | <b id="res-15-money">$0.00</b></span>
+            </div>
+            <div class="barra-resumen" id="bar-30">
+                <span>MES (30d):</span> <span><b id="res-30-km">0.000</b>km | <b id="res-30-gas">0.00</b>L | <b id="res-30-money">$0.00</b></span>
             </div>
         </div>
     </div>
@@ -83,41 +101,28 @@
 
     <div class="bottom-controls">
         <button id="btn-main" class="btn-main btn-rodar" onclick="controlRuta()">A RODAR 🏍️</button>
-        <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00;">PAUSA ⏸</button>
+        <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00; color:#000;">PAUSA ⏸</button>
     </div>
 
     <!-- Modales -->
     <div id="pantalla-historial" class="full-modal">
-        <h2 style="color:#0f0;">📊 CONTROL DE GASTOS</h2>
-        
-        <!-- Tableros de 7, 15, 30 días -->
-        <div id="resumenes-maestros"></div>
-
-        <hr style="border: 1px dashed #333; margin: 20px 0;">
-        <h3>📋 ÚLTIMOS CLIENTES</h3>
+        <h2 style="color:#0f0; border-bottom: 2px solid #0f0; padding-bottom: 10px;">📊 HISTORIAL CLIENTES</h2>
         <div id="lista-registros"></div>
         <button class="btn-close" onclick="cerrarModales()">VOLVER AL MAPA</button>
     </div>
 
     <div id="modal-fuel" class="full-modal">
         <h2>⛽ AJUSTAR TANQUE</h2>
-        <input type="number" id="input-fuel" step="0.1" style="width:100%; padding:20px; font-size:2em; background:#111; color:#0f0; border:2px solid #0f0;">
+        <input type="number" id="input-fuel" step="0.1" style="width:100%; padding:20px; font-size:2.5em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center; border-radius:15px;">
         <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFuel()">ACTUALIZAR LITROS</button>
         <button class="btn-close" onclick="cerrarModales()">CANCELAR</button>
     </div>
 
-    <div id="modal-gps" class="full-modal">
-        <h2>📍 CALCULADORA WHATSAPP</h2>
-        <input type="text" id="input-gps" placeholder="Pega ubicación aquí..." style="width:100%; padding:15px; background:#111; color:#fff; border:1px solid #0f0;">
-        <div id="distancia-calc" style="margin-top:15px; font-size:1.2em; color:#0f0;"></div>
-        <button class="btn-close" onclick="cerrarModales()">CERRAR</button>
-    </div>
-
     <div id="modal-calibrar" class="full-modal">
         <h2>🔧 CALIBRACIÓN MOTOR</h2>
-        <p>Factor actual: <span id="current-factor" style="color:#0f0;"></span></p>
-        <input type="number" id="input-factor" step="0.001" style="width:100%; padding:15px; font-size:1.5em; background:#111; color:#fff;">
-        <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFactor()">CALIBRAR FACTOR</button>
+        <p>Factor actual: <b id="current-factor" style="color:#0f0;"></b></p>
+        <input type="number" id="input-factor" step="0.001" style="width:100%; padding:20px; font-size:2em; background:#111; color:#fff; border-radius:10px;">
+        <button class="btn-main btn-rodar" style="margin-top:20px; width:100%;" onclick="guardarFactor()">CALIBRAR</button>
         <button class="btn-close" onclick="cerrarModales()">CERRAR</button>
     </div>
 
@@ -128,7 +133,7 @@
         let layerPines = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        let DB = JSON.parse(localStorage.getItem('lucy_v56')) || {
+        let DB = JSON.parse(localStorage.getItem('lucy_v57')) || {
             registros: [], factor: 0.05, fuel: 15.0
         };
 
@@ -140,26 +145,51 @@
             document.getElementById('val-time').innerText = formatTime(tTotal);
             document.getElementById('val-fuel').innerHTML = DB.fuel.toFixed(2) + '<span class="unit-small">L</span>';
             
-            // Alerta 4L
+            // Alerta Roja 4L
             if(DB.fuel <= 4.0) document.getElementById('panel-fuel').classList.add('fuel-alert');
             else document.getElementById('panel-fuel').classList.remove('fuel-alert');
 
-            let cons = dTotal * DB.factor;
-            document.getElementById('val-gas-trip').innerText = cons.toFixed(3) + " L";
-            document.getElementById('val-money-route').innerText = "$" + (cons * 0.5).toFixed(2);
+            let consTotal = dTotal * DB.factor;
+            document.getElementById('val-gas-trip').innerText = consTotal.toFixed(3) + " L";
+            document.getElementById('val-money-route').innerText = "$" + (consTotal * 0.5).toFixed(2);
             document.getElementById('val-money-total').innerText = "$" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
 
+            // Extra Logic
             if(extraActivo || dExtra > 0){
                 document.getElementById('extra-float').style.display = 'block';
                 document.getElementById('ex-km').innerText = dExtra.toFixed(3);
                 document.getElementById('ex-time').innerText = formatTime(tExtra).substring(3);
                 let cEx = dExtra * DB.factor;
-                document.getElementById('ex-gas').innerText = cEx.toFixed(3) + "L";
-                document.getElementById('ex-money').innerText = "$" + (cEx * 0.5).toFixed(2);
+                document.getElementById('ex-gas').innerText = cEx.toFixed(3);
+                document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else {
                 document.getElementById('extra-float').style.display = 'none';
             }
-            localStorage.setItem('lucy_v56', JSON.stringify(DB));
+
+            // Actualizar Barras de Arriba en vivo
+            actualizarBarrasResumen();
+            localStorage.setItem('lucy_v57', JSON.stringify(DB));
+        }
+
+        function actualizarBarrasResumen(){
+            const lapsos = [7, 15, 30];
+            lapsos.forEach(dias => {
+                let sKm = 0, sGas = 0, sMon = 0;
+                // Sumamos los registros existentes
+                DB.registros.forEach(r => {
+                    sKm += parseFloat(r.km);
+                    sGas += parseFloat(r.gas);
+                    sMon += parseFloat(r.money);
+                });
+                // Sumamos lo que va en vivo actualmente
+                sKm += dTotal;
+                sGas += (dTotal * DB.factor);
+                sMon += (dTotal * DB.factor * 0.5);
+
+                document.getElementById(`res-${dias}-km`).innerText = sKm.toFixed(3);
+                document.getElementById(`res-${dias}-gas`).innerText = sGas.toFixed(2);
+                document.getElementById(`res-${dias}-money`).innerText = "$" + sMon.toFixed(2);
+            });
         }
 
         function controlRuta(){
@@ -220,107 +250,18 @@
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
-        // RECONSTRUCCIÓN DE HISTORIAL Y TABLEROS
-        function abrirHistorial(){
-            calcularResumenesMaestros();
-            let list = document.getElementById('lista-registros');
-            list.innerHTML = DB.registros.map((r, index) => `
-                <div class="card-hist">
-                    <span class="btn-del" onclick="borrarRegistro(${index})">🗑️</span>
-                    <b>${r.cliente}</b> <span style="font-size:0.7em; color:#aaa;">${r.fecha}</span><br>
-                    <div class="grid-4">
-                        <span>🏁 ${r.km}km</span>
-                        <span>⛽ ${r.gas}L</span>
-                        <span>💰 $${r.money}</span>
-                        <span>⏱️ ${r.time}</span>
-                    </div>
-                    <div style="margin-top:8px; border-top:1px solid #333; padding-top:5px; color:#f0f; font-size:0.85em;">
-                        🚀 EXTRA: ${r.extra.km}km | ${r.extra.time} | $${r.extra.money}
-                    </div>
-                </div>
-            `).join('');
-            document.getElementById('pantalla-historial').style.display = 'block';
-        }
-
-        function calcularResumenesMaestros(){
-            const lapsos = [7, 15, 30];
-            let html = "";
-            lapsos.forEach(dias => {
-                let suma = {km:0, gas:0, money:0, time:0};
-                // Simulación de filtro por fecha (puedes mejorar esto con Date)
-                DB.registros.slice(0, dias*2).forEach(r => {
-                    suma.km += parseFloat(r.km);
-                    suma.gas += parseFloat(r.gas);
-                    suma.money += parseFloat(r.money);
-                });
-                html += `
-                    <div class="resumen-block">
-                        <span class="txt-label">TOTAL ${dias} DÍAS</span>
-                        <div class="grid-4">
-                            <div><b>${suma.km.toFixed(1)}</b><br><small>KM</small></div>
-                            <div><b>${suma.gas.toFixed(2)}</b><br><small>LITROS</small></div>
-                            <div><b style="color:#0f0;">$${suma.money.toFixed(2)}</b><br><small>USD</small></div>
-                            <div><b>${dias}d</b><br><small>LAPSO</small></div>
-                        </div>
-                    </div>
-                `;
-            });
-            document.getElementById('resumenes-maestros').innerHTML = html;
-        }
-
-        function borrarRegistro(i){
-            if(confirm("¿Borrar este cliente?")){
-                DB.registros.splice(i, 1);
-                abrirHistorial();
-                actualizarUI();
-            }
-        }
-
-        function abrirFuelModal(){
-            document.getElementById('input-fuel').value = DB.fuel.toFixed(2);
-            document.getElementById('modal-fuel').style.display = 'block';
-        }
-
-        function guardarFuel(){
-            DB.fuel = parseFloat(document.getElementById('input-fuel').value);
-            cerrarModales();
-            actualizarUI();
-        }
-
-        function abrirCalibrar(){
-            document.getElementById('current-factor').innerText = DB.factor;
-            document.getElementById('modal-calibrar').style.display = 'block';
-        }
-
-        function guardarFactor(){
-            DB.factor = parseFloat(document.getElementById('input-factor').value);
-            cerrarModales();
-            actualizarUI();
-        }
-
-        function abrirGPS(){
-            document.getElementById('modal-gps').style.display = 'block';
-        }
-
-        function ajusteManualKM(){
-            let n = prompt("Ajustar KM totales:", dTotal.toFixed(3));
-            if(n) { dTotal = parseFloat(n); actualizarUI(); }
-        }
-
-        function cerrarModales(){
-            document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none');
-        }
-
         function finalizarYGuardar(){
-            let cEx = dExtra * DB.factor;
             let reg = {
-                cliente: clienteActual, fecha: new Date().toLocaleString(),
-                km: dTotal.toFixed(3), time: formatTime(tTotal), gas: (dTotal*DB.factor).toFixed(3), 
+                cliente: clienteActual, 
+                fecha: new Date().toLocaleString(),
+                km: dTotal.toFixed(3), 
+                time: formatTime(tTotal), 
+                gas: (dTotal*DB.factor).toFixed(3), 
                 money: (dTotal*DB.factor*0.5).toFixed(2),
                 extra: {
                     km: dExtra.toFixed(3), 
                     time: formatTime(tExtra).substring(3),
-                    money: (cEx * 0.5).toFixed(2)
+                    money: (dExtra * DB.factor * 0.5).toFixed(2)
                 }
             };
             DB.registros.unshift(reg);
@@ -336,13 +277,61 @@
             actualizarUI();
         }
 
+        function abrirHistorial(){
+            let list = document.getElementById('lista-registros');
+            list.innerHTML = DB.registros.map((r, i) => `
+                <div class="card-hist">
+                    <span class="btn-del" onclick="borrarRegistro(${i})">🗑️</span>
+                    <b>${r.cliente}</b> <small style="color:#666;">${r.fecha}</small><br>
+                    <div style="display:grid; grid-template-columns: repeat(2,1fr); font-size:0.85em; margin-top:5px;">
+                        <span>🏁 ${r.km}km</span> <span>⛽ ${r.gas}L</span>
+                        <span style="color:#0f0;">💰 $${r.money}</span> <span>⏱️ ${r.time}</span>
+                    </div>
+                    <div style="color:#f0f; font-size:0.8em; margin-top:5px; border-top:1px solid #222;">
+                        🚀 EXTRA: ${r.extra.km}km | ${r.extra.time} | $${r.extra.money}
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('pantalla-historial').style.display = 'block';
+        }
+
+        function borrarRegistro(i){
+            if(confirm("¿Borrar este registro?")){
+                DB.registros.splice(i, 1);
+                abrirHistorial();
+                actualizarUI();
+            }
+        }
+
+        function abrirFuelModal(){
+            document.getElementById('input-fuel').value = DB.fuel.toFixed(2);
+            document.getElementById('modal-fuel').style.display = 'block';
+        }
+        function guardarFuel(){
+            DB.fuel = parseFloat(document.getElementById('input-fuel').value);
+            cerrarModales();
+            actualizarUI();
+        }
+        function abrirCalibrar(){
+            document.getElementById('current-factor').innerText = DB.factor;
+            document.getElementById('modal-calibrar').style.display = 'block';
+        }
+        function guardarFactor(){
+            DB.factor = parseFloat(document.getElementById('input-factor').value);
+            cerrarModales();
+            actualizarUI();
+        }
+        function ajusteManualKM(){
+            let n = prompt("Ajustar KM totales:", dTotal.toFixed(3));
+            if(n) { dTotal = parseFloat(n); actualizarUI(); }
+        }
+        function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function formatTime(s){
             let h = Math.floor(s / 3600);
             let m = Math.floor((s % 3600) / 60);
             let sec = s % 60;
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
-        
         actualizarUI();
     </script>
 </body>
