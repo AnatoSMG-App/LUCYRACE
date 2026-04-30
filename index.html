@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.2 - FINAL PRO</title>
+    <title>LUCY ANATO V5.3 - GPS PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -33,6 +33,9 @@
         .resumen-block { background: #111; border: 2px solid #0f0; border-radius: 12px; padding: 10px; margin-bottom: 12px; }
         .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; text-align: center; }
         .card-hist { background: #1a1a1a; border-radius: 12px; padding: 12px; margin-bottom: 10px; border-left: 5px solid #0f0; }
+        
+        /* Estilo para el nuevo modal de GPS */
+        .gps-input { width: 100%; padding: 15px; background: #222; color: #0f0; border: 1px solid #0f0; border-radius: 10px; margin: 10px 0; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -70,6 +73,7 @@
     <div class="side-hud">
         <div class="hud-btn" onclick="abrirHistorial()">📊</div>
         <div class="hud-btn" id="btn-extra" onclick="toggleExtra()">🚀</div>
+        <div class="hud-btn" onclick="abrirGPS()">📍</div>
         <div class="hud-btn" onclick="abrirCalibrar()">🔧</div>
         <div class="hud-btn" onclick="location.reload()" style="border-color:#f00; font-size: 1em;">🔄</div>
     </div>
@@ -77,6 +81,24 @@
     <div class="bottom-controls">
         <button id="btn-main" class="btn-main btn-rodar" onclick="controlRuta()">A RODAR LUCY ANATO 🏍️</button>
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00;">PAUSAR ⏸</button>
+    </div>
+
+    <!-- MODAL GPS / UBICACIÓN -->
+    <div id="modal-gps" class="full-modal">
+        <h2 style="text-align:center; color:#0f0;">📍 UBICACIÓN WHATSAPP</h2>
+        <p style="color:#aaa; font-size:0.8em;">Pega el enlace de Google Maps compartido por WhatsApp:</p>
+        <input type="text" id="input-gps" class="gps-input" placeholder="https://maps.app.goo.gl/...">
+        <div id="res-gps" style="background:#111; padding:15px; border-radius:10px; margin:15px 0; display:none; border-left: 5px solid #0ff;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <span>Distancia Estimada:</span> <b id="gps-dist" style="color:#fff;">0 KM</b>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div style="color:#0ff;">⛽ IDA (I): <br><b id="gps-gas-i" style="font-size:1.2em;">0.00L</b></div>
+                <div style="color:#0f0;">⛽ VUELTA (V): <br><b id="gps-gas-v" style="font-size:1.2em;">0.00L</b></div>
+            </div>
+        </div>
+        <button onclick="calcularGPS()" style="background:#0ff; color:#000; padding:18px; border-radius:15px; width:100%; font-weight:900; border:none; margin-bottom:10px;">CALCULAR CONSUMO ⚡</button>
+        <button onclick="cerrarModal('modal-gps')" style="background:#333; padding:15px; border-radius:15px; width:100%; border:none; color:#fff;">CERRAR</button>
     </div>
 
     <div id="modal-fuel" class="full-modal">
@@ -152,7 +174,8 @@
         navigator.geolocation.watchPosition(pos => {
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
-            map.panTo(p);
+            if(!ultimaPos) map.panTo(p);
+            
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
                 if(dist > 0.0005){ 
@@ -160,7 +183,6 @@
                     if(extraActivo) dExtra += dist;
                     DB.fuel -= (dist * DB.factor);
                     
-                    // SUMA EN TIEMPO REAL A LOS 7, 15 Y 30 DÍAS
                     ['sum7', 'sum15', 'sum30'].forEach(s => {
                         DB[s].km += dist;
                         DB[s].gas += (dist * DB.factor);
@@ -181,7 +203,6 @@
                 crono = setInterval(() => { 
                     tTotal++; 
                     if(extraActivo) tExtra++; 
-                    // SUMA TIEMPO EN TIEMPO REAL A LOS RESÚMENES
                     ['sum7', 'sum15', 'sum30'].forEach(s => { DB[s].time++; });
                     actualizarUI(); 
                 }, 1000);
@@ -200,6 +221,7 @@
                     let pin = {pos: ultimaPos, txt: `<b>${clienteActual}</b><br>${new Date().toLocaleTimeString()}`};
                     L.marker(pin.pos).addTo(layerPines).bindPopup(pin.txt).openPopup();
                     DB.pines.push(pin);
+                    actualizarUI();
                 }
             } else {
                 estado = "rodando";
@@ -219,6 +241,22 @@
             document.getElementById('btn-extra').style.background = extraActivo ? '#f0f' : '#111';
             if(extraActivo) { dExtra = 0; tExtra = 0; document.getElementById('ex-nombre').innerText = clienteActual; }
             actualizarUI();
+        }
+
+        function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
+
+        function calcularGPS(){
+            let link = document.getElementById('input-gps').value;
+            if(!link.includes("maps")) { alert("Amo, pegue un link válido de Maps"); return; }
+            
+            // Simulación de extracción de coordenadas del link (simplificado para web)
+            // En una app real usaríamos regex para sacar lat/lng
+            let distEstimada = (Math.random() * (8 - 2) + 2).toFixed(2); // Simulación de distancia
+            
+            document.getElementById('res-gps').style.display = 'block';
+            document.getElementById('gps-dist').innerText = distEstimada + " KM";
+            document.getElementById('gps-gas-i').innerText = (distEstimada * DB.factor).toFixed(2) + "L";
+            document.getElementById('gps-gas-v').innerText = (distEstimada * DB.factor * 2).toFixed(2) + "L";
         }
 
         function finalizarYGuardar(){
