@@ -33,14 +33,15 @@
         .btn-extra { background: #00fbff; color: #000; }
         .btn-stop { background: #ff0000; color: #fff; margin-top: 10px; height: 45px; font-size: 0.9em; }
         #pantalla-informe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; color: #000; z-index: 2000; display: none; padding: 15px; box-sizing: border-box; overflow-y: auto; }
-        .card-informe { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: #fff; }
+        .card-informe { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: #fff; position: relative; }
         #detalle-dia { background: #fff3cd; padding: 15px; border-radius: 15px; margin: 15px 0; border: 1px solid #ffeeba; font-size: 0.9em; line-height: 1.5; }
         .btn-semana { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .btn-semana button { padding: 12px; background: #eee; font-size: 0.8em; color: #000; border-radius: 12px; border: 1px solid #ccc; height: 50px; }
         .base-label { background: #000 !important; color: #0f0 !important; border: 1.5px solid #0f0 !important; font-weight: 900 !important; font-size: 0.75em !important; padding: 2px 5px !important; opacity: 1 !important; }
-        /* Estilo para lista de clientes en historial */
         .item-cliente { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 5px; border: 1px solid #ddd; color: #333; }
         .btn-borrar-mini { background: #ff0000; color: #fff; width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 0.8em; }
+        .btn-reset-corte { position: absolute; right: 10px; top: 10px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid #fff; padding: 2px 8px; border-radius: 5px; font-size: 0.7em; }
+        .ruta-ficha { background: #fff; border: 2px solid #0f0; border-radius: 10px; padding: 10px; margin-bottom: 10px; color: #000; }
     </style>
 </head>
 <body>
@@ -56,11 +57,21 @@
 
     <div id="pantalla-informe">
         <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; border-radius: 12px; padding: 10px 25px;">⬅ VOLVER</button>
-        <div class="card-informe" style="background: #28a745; margin-top:10px;">CORTE 7 DÍAS:<br><span id="c7-txt">00:00 | 0km | 0L | $0.00</span></div>
-        <div class="card-informe" style="background: #17a2b8;">CORTE 15 DÍAS:<br><span id="c15-txt">00:00 | 0km | 0L | $0.00</span></div>
-        <div class="card-informe" style="background: #6f42c1;">CORTE 30 DÍAS (MENSUAL):<br><span id="c30-txt">00:00 | 0km | 0L | $0.00</span></div>
         
-        <div id="detalle-dia"><b>HISTORIAL DE CLIENTES:</b><div id="lista-clientes-historial"></div></div>
+        <div class="card-informe" style="background: #28a745; margin-top:10px;">
+            CORTE 7 DÍAS:<br><span id="c7-txt">00:00 | 0km | 0L | $0.00</span>
+            <button class="btn-reset-corte" onclick="resetCorte()">RESET</button>
+        </div>
+        <div class="card-informe" style="background: #17a2b8;">
+            CORTE 15 DÍAS:<br><span id="c15-txt">00:00 | 0km | 0L | $0.00</span>
+            <button class="btn-reset-corte" onclick="resetCorte()">RESET</button>
+        </div>
+        <div class="card-informe" style="background: #6f42c1;">
+            CORTE 30 DÍAS:<br><span id="c30-txt">00:00 | 0km | 0L | $0.00</span>
+            <button class="btn-reset-corte" onclick="resetCorte()">RESET</button>
+        </div>
+        
+        <div id="detalle-dia"><b>SELECCIONA UN DÍA PARA VER LAS RUTAS</b></div>
         
         <div class="btn-semana">
             <button onclick="verDia(this, 'Lunes')">LUN</button>
@@ -70,6 +81,11 @@
             <button onclick="verDia(this, 'Viernes')">VIE</button>
             <button onclick="verDia(this, 'Sábado')">SAB</button>
             <button onclick="verDia(this, 'Domingo')">DOM</button>
+        </div>
+        
+        <div style="margin-top:20px;">
+            <b>MAPA DE CLIENTES:</b>
+            <div id="lista-clientes-historial"></div>
         </div>
     </div>
 
@@ -118,7 +134,6 @@
         let ultimaPos = null;
         let marcadoresMapa = [];
 
-        // CARGA DE MEMORIA - Se agregó acumulado de tiempo
         let DB = JSON.parse(localStorage.getItem('lucy_data')) || { etiquetas: [], acumulado: {km:0, l:0, m:0, t:0} };
 
         function getDist(p1, p2) {
@@ -164,7 +179,6 @@
             document.getElementById('e-money').innerText = (dE * factor * PRECIO).toFixed(2);
             document.getElementById('e-gas').innerText = (dE * factor).toFixed(1);
             
-            // Actualización de barras de historial con TIEMPO
             let tKm = DB.acumulado.km + dC + dE; 
             let tG = DB.acumulado.l + ((dC + dE) * factor);
             let tT = (DB.acumulado.t || 0) + tC + tE;
@@ -205,17 +219,26 @@
             marcadoresMapa.push(m);
 
             if(guardar) {
-                // Ahora guardamos la "foto" del momento: tiempo, km y gas
                 let dActual = new Date();
                 let dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+                
+                // LA CUENTA DE CUATRO: Tiempo, Km, Gas, Plata
+                let kmTramo = dC + dE;
+                let gasTramo = kmTramo * factor;
+                let plataTramo = gasTramo * PRECIO;
+
                 DB.etiquetas.push({
                     l: latlng, 
                     n: nombre, 
                     t: tC + tE, 
-                    km: dC + dE, 
-                    gas: (dC + dE) * factor,
+                    km: kmTramo, 
+                    gas: gasTramo,
+                    plata: plataTramo,
                     dia: dias[dActual.getDay()]
                 });
+
+                // Reiniciamos contadores para la siguiente ruta del mismo día
+                tC = 0; tE = 0; dC = 0; dE = 0;
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 actualizarListaHistorial();
             }
@@ -245,19 +268,22 @@
             DB.etiquetas.forEach((item, index) => {
                 let div = document.createElement('div');
                 div.className = 'item-cliente';
-                // Mostramos nombre y tiempo en la lista
                 div.innerHTML = `<span><b>${item.n.toUpperCase()}</b> (${fmt(item.t || 0)})</span> 
                                  <button class="btn-borrar-mini" onclick="borrarRegistro(${index})">X</button>`;
                 lista.appendChild(div);
             });
         }
 
+        function resetCorte() {
+            if(confirm("¿Resetear todos los acumulados?")) {
+                DB.acumulado = {km:0, l:0, m:0, t:0};
+                localStorage.setItem('lucy_data', JSON.stringify(DB));
+                actualizarUI();
+            }
+        }
+
         function borrarRegistro(index) {
             if(confirm("¿Borrar este registro definitivamente?")) {
-                let nombreBorrar = DB.etiquetas[index].n;
-                marcadoresMapa.forEach(m => {
-                    if(m.nombreAsignado === nombreBorrar) map.removeLayer(m);
-                });
                 DB.etiquetas.splice(index, 1);
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 actualizarListaHistorial();
@@ -268,30 +294,25 @@
             document.querySelectorAll('.btn-semana button').forEach(b => b.style.background = '#eee');
             btn.style.background = '#0f0';
             
-            // Filtramos las etiquetas que pertenecen a este día
             let registrosDia = DB.etiquetas.filter(x => x.dia === dia);
-            let sumaT = 0, sumaKm = 0, sumaG = 0;
+            let html = `<b>RUTAS DEL ${dia.toUpperCase()}</b><br><br>`;
             
-            registrosDia.forEach(r => {
-                sumaT += (r.t || 0);
-                sumaKm += (r.km || 0);
-                sumaG += (r.gas || 0);
-            });
-
-            // Si es el día actual, sumamos lo que está en los relojes ahora mismo
-            let diasNom = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-            if(dia === diasNom[new Date().getDay()]) {
-                sumaT += (tC + tE);
-                sumaKm += (dC + dE);
-                sumaG += ((dC + dE) * factor);
+            if(registrosDia.length === 0) {
+                html += "Sin rutas grabadas.";
+            } else {
+                registrosDia.forEach(r => {
+                    html += `
+                        <div class="ruta-ficha">
+                            <b>📍 ${r.n.toUpperCase()}</b><br>
+                            ⏱️ Tiempo: ${fmt(r.t)}<br>
+                            🛣️ Recorrido: ${r.km.toFixed(2)} km<br>
+                            ⛽ Gasolina: ${r.gas.toFixed(1)} L<br>
+                            💵 Costo: $${r.plata.toFixed(2)}
+                        </div>
+                    `;
+                });
             }
-
-            document.getElementById('detalle-dia').innerHTML = `
-                <b>RESUMEN ${dia.toUpperCase()}</b><br>
-                ⏱️ Tiempo: ${fmt(sumaT)}<br>
-                🏠 Total: ${sumaKm.toFixed(2)}km | ${sumaG.toFixed(1)}L | $${(sumaG*PRECIO).toFixed(2)}<br>
-                📌 Registros: ${registrosDia.length}
-            `;
+            document.getElementById('detalle-dia').innerHTML = html;
         }
 
         function finalizarRuta() { 
@@ -301,13 +322,17 @@
                 DB.acumulado.t = (DB.acumulado.t || 0) + (tC + tE);
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 grabando = false;
-                alert("Día finalizado. Datos guardados."); 
+                alert("Día finalizado."); 
                 location.reload(); 
             }
         }
 
         window.onload = () => {
-            DB.etiquetas.forEach(x => crearEtiqueta(x.l, x.n, false));
+            DB.etiquetas.forEach(x => {
+                let m = L.marker(x.l).addTo(map).bindTooltip(x.n.toUpperCase(), {permanent: true, className: 'base-label'});
+                m.nombreAsignado = x.n;
+                marcadoresMapa.push(m);
+            });
             actualizarUI();
         }
     </script>
