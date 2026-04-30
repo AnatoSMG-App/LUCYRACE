@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9 - PROTOCOLO MURACHI</title>
+    <title>LUCY ANATO V5.9.1 - PROTOCOLO MURACHI</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -219,6 +219,10 @@
                 if(n) {
                     clienteActual = n;
                     document.getElementById('ex-nombre').innerText = n.toUpperCase();
+                    // SOLUCIÓN ETIQUETA: Marcamos el mapa DE UNA VEZ
+                    if(ultimaPos) {
+                        L.marker(ultimaPos).addTo(layerPines).bindPopup("<b>" + n + "</b>").openPopup();
+                    }
                 }
             } else {
                 estado = "rodando";
@@ -260,6 +264,7 @@
             let cTotal = dTotal * DB.factor;
             let mTotal = cTotal * 0.5;
             
+            // SOLUCIÓN TIEMPO: Guardamos el valor actual del cronómetro maestro
             let reg = {
                 cliente: clienteActual, 
                 fecha: new Date().toLocaleString(),
@@ -276,15 +281,18 @@
             };
             DB.registros.unshift(reg);
 
-            // Sumar a los acumuladores globales
+            // Sumar a los acumuladores globales incluyendo el TIEMPO
             [DB.siete, DB.quince, DB.mes].forEach(obj => {
                 obj.km += dTotal;
-                obj.time += tTotal;
+                obj.time += tTotal; // Aquí conectamos el cable del tiempo
                 obj.gas += cTotal;
                 obj.money += mTotal;
             });
 
-            if(ultimaPos) L.marker(ultimaPos).addTo(layerPines).bindPopup(clienteActual + " $" + mTotal.toFixed(2)).openPopup();
+            // Si no se marcó en pausa, lo marcamos al final
+            if(ultimaPos && !layerPines.getLayers().length) {
+                L.marker(ultimaPos).addTo(layerPines).bindPopup(clienteActual + " $" + mTotal.toFixed(2)).openPopup();
+            }
             resetTodo();
         }
 
