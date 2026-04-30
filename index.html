@@ -56,9 +56,9 @@
 
     <div id="pantalla-informe">
         <button onclick="cerrarInforme()" style="background:#000; color:#fff; width: auto; border-radius: 12px; padding: 10px 25px;">⬅ VOLVER</button>
-        <div class="card-informe" style="background: #28a745; margin-top:10px;">CORTE 7 DÍAS:<br><span id="c7-txt">0km | 0L | $0.00</span></div>
-        <div class="card-informe" style="background: #17a2b8;">CORTE 15 DÍAS:<br><span id="c15-txt">0km | 0L | $0.00</span></div>
-        <div class="card-informe" style="background: #6f42c1;">CORTE 30 DÍAS (MENSUAL):<br><span id="c30-txt">0km | 0L | $0.00</span></div>
+        <div class="card-informe" style="background: #28a745; margin-top:10px;">CORTE 7 DÍAS:<br><span id="c7-txt">00:00 | 0km | 0L | $0.00</span></div>
+        <div class="card-informe" style="background: #17a2b8;">CORTE 15 DÍAS:<br><span id="c15-txt">00:00 | 0km | 0L | $0.00</span></div>
+        <div class="card-informe" style="background: #6f42c1;">CORTE 30 DÍAS (MENSUAL):<br><span id="c30-txt">00:00 | 0km | 0L | $0.00</span></div>
         
         <div id="detalle-dia"><b>HISTORIAL DE CLIENTES:</b><div id="lista-clientes-historial"></div></div>
         
@@ -118,8 +118,8 @@
         let ultimaPos = null;
         let marcadoresMapa = [];
 
-        // CARGA DE MEMORIA
-        let DB = JSON.parse(localStorage.getItem('lucy_data')) || { etiquetas: [], acumulado: {km:0, l:0, m:0} };
+        // CARGA DE MEMORIA - Se agregó acumulado de tiempo
+        let DB = JSON.parse(localStorage.getItem('lucy_data')) || { etiquetas: [], acumulado: {km:0, l:0, m:0, t:0} };
 
         function getDist(p1, p2) {
             let R = 6371; 
@@ -164,9 +164,11 @@
             document.getElementById('e-money').innerText = (dE * factor * PRECIO).toFixed(2);
             document.getElementById('e-gas').innerText = (dE * factor).toFixed(1);
             
+            // Actualización de barras de historial con TIEMPO
             let tKm = DB.acumulado.km + dC + dE; 
             let tG = DB.acumulado.l + ((dC + dE) * factor);
-            let str = `${tKm.toFixed(2)}km | ${tG.toFixed(1)}L | $${(tG * PRECIO).toFixed(2)}`;
+            let tT = (DB.acumulado.t || 0) + tC + tE;
+            let str = `${fmt(tT)} | ${tKm.toFixed(2)}km | ${tG.toFixed(1)}L | $${(tG * PRECIO).toFixed(2)}`;
             document.getElementById('c7-txt').innerText = str;
             document.getElementById('c15-txt').innerText = str;
             document.getElementById('c30-txt').innerText = str;
@@ -178,8 +180,8 @@
             document.getElementById('run-area').style.display = 'block';
             if(timerC) clearInterval(timerC);
             if(timerE) clearInterval(timerE);
-            timerC = setInterval(() => { if(grabando && !enP) { tC++; document.getElementById('c-time').innerText = fmt(tC); } }, 1000);
-            timerE = setInterval(() => { if(grabando && enE) { tE++; document.getElementById('e-time').innerText = fmt(tE); } }, 1000);
+            timerC = setInterval(() => { if(grabando && !enP) { tC++; document.getElementById('c-time').innerText = fmt(tC); actualizarUI(); } }, 1000);
+            timerE = setInterval(() => { if(grabando && enE) { tE++; document.getElementById('e-time').innerText = fmt(tE); actualizarUI(); } }, 1000);
         }
 
         function calibrar() {
@@ -203,7 +205,17 @@
             marcadoresMapa.push(m);
 
             if(guardar) {
-                DB.etiquetas.push({l: latlng, n: nombre});
+                // Ahora guardamos la "foto" del momento: tiempo, km y gas
+                let dActual = new Date();
+                let dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+                DB.etiquetas.push({
+                    l: latlng, 
+                    n: nombre, 
+                    t: tC + tE, 
+                    km: dC + dE, 
+                    gas: (dC + dE) * factor,
+                    dia: dias[dActual.getDay()]
+                });
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 actualizarListaHistorial();
             }
@@ -233,7 +245,8 @@
             DB.etiquetas.forEach((item, index) => {
                 let div = document.createElement('div');
                 div.className = 'item-cliente';
-                div.innerHTML = `<span><b>Cliente:</b> ${item.n.toUpperCase()}</span> 
+                // Mostramos nombre y tiempo en la lista
+                div.innerHTML = `<span><b>${item.n.toUpperCase()}</b> (${fmt(item.t || 0)})</span> 
                                  <button class="btn-borrar-mini" onclick="borrarRegistro(${index})">X</button>`;
                 lista.appendChild(div);
             });
@@ -242,11 +255,9 @@
         function borrarRegistro(index) {
             if(confirm("¿Borrar este registro definitivamente?")) {
                 let nombreBorrar = DB.etiquetas[index].n;
-                // Borrar del Mapa
                 marcadoresMapa.forEach(m => {
                     if(m.nombreAsignado === nombreBorrar) map.removeLayer(m);
                 });
-                // Borrar de DB
                 DB.etiquetas.splice(index, 1);
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 actualizarListaHistorial();
@@ -256,17 +267,41 @@
         function verDia(btn, dia) {
             document.querySelectorAll('.btn-semana button').forEach(b => b.style.background = '#eee');
             btn.style.background = '#0f0';
-            let gC = dC * factor; let gE = dE * factor;
-            document.getElementById('detalle-dia').innerHTML = `<b>RESUMEN ${dia.toUpperCase()}</b><br>🏠 Cliente: ${dC.toFixed(2)}km | ${gC.toFixed(1)}L | $${(gC*PRECIO).toFixed(2)}<br>🚀 Extra: ${dE.toFixed(2)}km | ${gE.toFixed(1)}L | $${(gE*PRECIO).toFixed(2)}<br>⛽ Total Gas: ${(gC+gE).toFixed(1)} L`;
+            
+            // Filtramos las etiquetas que pertenecen a este día
+            let registrosDia = DB.etiquetas.filter(x => x.dia === dia);
+            let sumaT = 0, sumaKm = 0, sumaG = 0;
+            
+            registrosDia.forEach(r => {
+                sumaT += (r.t || 0);
+                sumaKm += (r.km || 0);
+                sumaG += (r.gas || 0);
+            });
+
+            // Si es el día actual, sumamos lo que está en los relojes ahora mismo
+            let diasNom = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+            if(dia === diasNom[new Date().getDay()]) {
+                sumaT += (tC + tE);
+                sumaKm += (dC + dE);
+                sumaG += ((dC + dE) * factor);
+            }
+
+            document.getElementById('detalle-dia').innerHTML = `
+                <b>RESUMEN ${dia.toUpperCase()}</b><br>
+                ⏱️ Tiempo: ${fmt(sumaT)}<br>
+                🏠 Total: ${sumaKm.toFixed(2)}km | ${sumaG.toFixed(1)}L | $${(sumaG*PRECIO).toFixed(2)}<br>
+                📌 Registros: ${registrosDia.length}
+            `;
         }
 
         function finalizarRuta() { 
             if(confirm("¿Guardar y finalizar día?")) {
                 DB.acumulado.km += (dC + dE);
                 DB.acumulado.l += ((dC + dE) * factor);
+                DB.acumulado.t = (DB.acumulado.t || 0) + (tC + tE);
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 grabando = false;
-                alert("Día finalizado. Contadores reseteados."); 
+                alert("Día finalizado. Datos guardados."); 
                 location.reload(); 
             }
         }
