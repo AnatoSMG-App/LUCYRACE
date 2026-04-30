@@ -41,7 +41,7 @@
         .item-cliente { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 5px; border: 1px solid #ddd; color: #333; }
         .btn-borrar-mini { background: #ff0000; color: #fff; width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 0.8em; }
         .btn-reset-corte { position: absolute; right: 10px; top: 10px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid #fff; padding: 2px 8px; border-radius: 5px; font-size: 0.7em; }
-        .ruta-ficha { background: #fff; border: 2px solid #0f0; border-radius: 10px; padding: 10px; margin-bottom: 10px; color: #000; }
+        .ruta-ficha { background: #fff; border: 2px solid #0f0; border-radius: 10px; padding: 10px; margin-bottom: 10px; color: #000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -60,15 +60,15 @@
         
         <div class="card-informe" style="background: #28a745; margin-top:10px;">
             CORTE 7 DÍAS:<br><span id="c7-txt">00:00 | 0km | 0L | $0.00</span>
-            <button class="btn-reset-corte" onclick="resetCorte()">RESET</button>
+            <button class="btn-reset-corte" onclick="resetCorte('7')">RESET</button>
         </div>
         <div class="card-informe" style="background: #17a2b8;">
             CORTE 15 DÍAS:<br><span id="c15-txt">00:00 | 0km | 0L | $0.00</span>
-            <button class="btn-reset-corte" onclick="resetCorte()">RESET</button>
+            <button class="btn-reset-corte" onclick="resetCorte('15')">RESET</button>
         </div>
         <div class="card-informe" style="background: #6f42c1;">
             CORTE 30 DÍAS:<br><span id="c30-txt">00:00 | 0km | 0L | $0.00</span>
-            <button class="btn-reset-corte" onclick="resetCorte()">RESET</button>
+            <button class="btn-reset-corte" onclick="resetCorte('30')">RESET</button>
         </div>
         
         <div id="detalle-dia"><b>SELECCIONA UN DÍA PARA VER LAS RUTAS</b></div>
@@ -134,7 +134,13 @@
         let ultimaPos = null;
         let marcadoresMapa = [];
 
-        let DB = JSON.parse(localStorage.getItem('lucy_data')) || { etiquetas: [], acumulado: {km:0, l:0, m:0, t:0} };
+        // Inicializar base de datos con acumuladores independientes
+        let DB = JSON.parse(localStorage.getItem('lucy_data')) || { 
+            etiquetas: [], 
+            c7: {km:0, l:0, t:0}, 
+            c15: {km:0, l:0, t:0}, 
+            c30: {km:0, l:0, t:0} 
+        };
 
         function getDist(p1, p2) {
             let R = 6371; 
@@ -179,16 +185,22 @@
             document.getElementById('e-money').innerText = (dE * factor * PRECIO).toFixed(2);
             document.getElementById('e-gas').innerText = (dE * factor).toFixed(1);
             
-            let tKm = DB.acumulado.km + dC + dE; 
-            let tG = DB.acumulado.l + ((dC + dE) * factor);
-            let tT = (DB.acumulado.t || 0) + tC + tE;
-            let str = `${fmt(tT)} | ${tKm.toFixed(2)}km | ${tG.toFixed(1)}L | $${(tG * PRECIO).toFixed(2)}`;
-            document.getElementById('c7-txt').innerText = str;
-            document.getElementById('c15-txt').innerText = str;
-            document.getElementById('c30-txt').innerText = str;
+            // Actualizar Barras de Corte con sus propios datos
+            ['7','15','30'].forEach(c => {
+                let data = DB['c'+c];
+                let tT = data.t + (tC + tE);
+                let tKm = data.km + (dC + dE);
+                let tG = data.l + ((dC + dE) * factor);
+                document.getElementById(`c${c}-txt`).innerText = `${fmt(tT)} | ${tKm.toFixed(2)}km | ${tG.toFixed(1)}L | $${(tG * PRECIO).toFixed(2)}`;
+            });
         }
 
         function iniciarRuta() {
+            // Reset Maestro para empezar de cero real
+            tC = 0; tE = 0; dC = 0; dE = 0;
+            document.getElementById('c-time').innerText = "00:00";
+            document.getElementById('e-time').innerText = "00:00";
+            
             grabando = true;
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('run-area').style.display = 'block';
@@ -222,25 +234,32 @@
                 let dActual = new Date();
                 let dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
                 
-                // LA CUENTA DE CUATRO: Tiempo, Km, Gas, Plata
                 let kmTramo = dC + dE;
                 let gasTramo = kmTramo * factor;
                 let plataTramo = gasTramo * PRECIO;
+                let tiempoTramo = tC + tE;
 
                 DB.etiquetas.push({
                     l: latlng, 
                     n: nombre, 
-                    t: tC + tE, 
+                    t: tiempoTramo, 
                     km: kmTramo, 
                     gas: gasTramo,
                     plata: plataTramo,
                     dia: dias[dActual.getDay()]
                 });
 
-                // Reiniciamos contadores para la siguiente ruta del mismo día
+                // Sumar al acumulado de las barras antes de limpiar
+                ['c7','c15','c30'].forEach(c => {
+                    DB[c].km += kmTramo;
+                    DB[c].l += gasTramo;
+                    DB[c].t += tiempoTramo;
+                });
+
                 tC = 0; tE = 0; dC = 0; dE = 0;
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 actualizarListaHistorial();
+                actualizarUI();
             }
         }
 
@@ -274,9 +293,9 @@
             });
         }
 
-        function resetCorte() {
-            if(confirm("¿Resetear todos los acumulados?")) {
-                DB.acumulado = {km:0, l:0, m:0, t:0};
+        function resetCorte(tipo) {
+            if(confirm(`¿Resetear acumulado de ${tipo} días?`)) {
+                DB['c'+tipo] = {km:0, l:0, t:0};
                 localStorage.setItem('lucy_data', JSON.stringify(DB));
                 actualizarUI();
             }
@@ -317,11 +336,8 @@
 
         function finalizarRuta() { 
             if(confirm("¿Guardar y finalizar día?")) {
-                DB.acumulado.km += (dC + dE);
-                DB.acumulado.l += ((dC + dE) * factor);
-                DB.acumulado.t = (DB.acumulado.t || 0) + (tC + tE);
-                localStorage.setItem('lucy_data', JSON.stringify(DB));
                 grabando = false;
+                localStorage.setItem('lucy_data', JSON.stringify(DB));
                 alert("Día finalizado."); 
                 location.reload(); 
             }
