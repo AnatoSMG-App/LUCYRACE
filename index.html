@@ -3,42 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY JHA - V4.4 ULTRA INSTINTO</title>
+    <title>LUCY JHA - V4.5 ULTRA INSTINTO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; pointer-events: none; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
-        .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; pointer-events: auto; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); transition: all 0.3s; }
+        .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; pointer-events: auto; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
         .val-big { font-size: 1.2em; font-weight: 900; color: #0f0; display: block; }
         .unit-small { font-size: 0.6em; margin-left: 2px; }
         .txt-label { font-size: 0.55em; font-weight: bold; color: #aaa; text-transform: uppercase; display: block; }
         
-        /* ALERTA ULTRA INSTINTO */
-        @keyframes alert-pulse { 0% { transform: scale(1); text-shadow: 0 0 5px #f00; } 50% { transform: scale(1.1); text-shadow: 0 0 20px #f00; } 100% { transform: scale(1); text-shadow: 0 0 5px #f00; } }
-        .fuel-danger { border-color: #f00 !important; color: #f00 !important; animation: alert-pulse 0.5s infinite; }
-        .fuel-danger .val-big { color: #ff0000 !important; font-size: 1.6em; }
+        @keyframes alert-pulse { 0% { border-color: #f00; } 50% { border-color: #500; } 100% { border-color: #f00; } }
+        .fuel-danger { animation: alert-pulse 0.5s infinite; color: #f00 !important; }
 
         .side-hud { position: absolute; left: 15px; bottom: 120px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
         .hud-btn { width: 45px; height: 45px; background: #000; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2em; cursor: pointer; box-shadow: 0 0 10px #0f0; }
         
         .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; display: flex; gap: 10px; z-index: 1000; }
-        .btn-main { flex: 1; padding: 15px; border-radius: 15px; border: none; font-weight: bold; font-size: 1em; cursor: pointer; }
+        .btn-main { flex: 1; padding: 15px; border-radius: 15px; border: none; font-weight: bold; font-size: 1em; cursor: pointer; text-transform: uppercase; }
         .btn-rodar { background: #0f0; color: #000; }
         .btn-stop { background: #f00; color: #fff; }
-        .btn-marker { background: #ffae00; color: #000; }
+        .btn-pause { background: #ffae00; color: #000; }
 
-        #pantalla-historial { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 4000; display: none; padding: 15px; overflow-y: auto; }
-        .resumen-card { background: #111; border: 2px solid #0f0; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
-        .tab-resumen { display: flex; justify-content: space-around; margin-bottom: 10px; }
-        .tab-btn { background: #222; border: 1px solid #444; color: #888; padding: 8px; border-radius: 8px; font-size: 0.7em; flex:1; margin: 0 2px; }
-        .tab-btn.active { border-color: #0f0; color: #0f0; background: rgba(0,255,0,0.1); }
+        #pantalla-historial, .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 4000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
+        .modal-box { background: #111; border: 2px solid #0f0; padding: 20px; border-radius: 20px; width: 90%; margin: 20% auto; }
+        input { width: 100%; padding: 12px; background: #000; color: #0f0; border: 1px solid #0f0; border-radius: 10px; margin: 10px 0; box-sizing: border-box; font-size: 1.1em; }
         .card-hist { background: #151515; border-radius: 12px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #ffae00; position: relative; }
-        .btn-del { position: absolute; right: 10px; top: 10px; color: #f00; background: none; border: none; font-size: 1.2em; }
-        .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; }
-        .modal-box { background: #111; border: 2px solid #0f0; padding: 20px; border-radius: 20px; width: 85%; }
-        input { width: 100%; padding: 12px; background: #000; color: #0f0; border: 1px solid #333; border-radius: 10px; margin: 10px 0; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -47,32 +39,18 @@
 
     <div class="top-panels">
         <div class="row-panels">
-            <!-- RUTA ACTUAL CON 4 DATOS -->
             <div class="panel-data" style="border-color: #ffae00;">
-                <span class="txt-label">🏍️ RUTA</span>
-                <span class="val-big" id="val-km" style="color:#ffae00">0.000<span class="unit-small">KM</span></span>
+                <span class="txt-label">🏍️ RUTA ACTUAL</span>
+                <span class="val-big" id="val-km">0.000<span class="unit-small">KM</span></span>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; font-size:0.65em; color:#aaa; margin-top:4px;">
                     <span id="val-time">00:00:00</span>
-                    <span id="val-gas-route" style="text-align:right">0.00L</span>
-                    <span id="val-money-route" style="color:#0f0">$0.00</span>
+                    <span id="val-money-route" style="text-align:right; color:#0f0">$0.00</span>
                 </div>
             </div>
-            <!-- TANQUE CON DINERO EN BAJADA -->
-            <div class="panel-data" id="panel-fuel" onclick="recargarGasosa()">
+            <div class="panel-data" id="panel-fuel" onclick="ajustarTanque()">
                 <span class="txt-label">⛽ TANQUE</span>
-                <span class="val-big" id="val-fuel">10.00<span class="unit-small">L</span></span>
-                <span id="val-money-total" style="font-size:0.7em; color:#0f0">$5.00 Disp.</span>
-            </div>
-        </div>
-        <!-- EXTRA (MANDADO) CON SUS 4 DATOS -->
-        <div class="panel-data" id="panel-extra-data" style="border-color:#ff00ea; display:none; flex:none;">
-            <span class="txt-label" style="color:#ff00ea">🚀 EXTRA (MANDADO)</span>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span class="val-big" id="ex-km" style="color:#ff00ea">0.000<span class="unit-small">KM</span></span>
-                <div style="text-align:right; font-size:0.65em;">
-                    <span id="ex-time" style="display:block">00:00:00</span>
-                    <span id="ex-money" style="color:#0f0; font-weight:bold">$0.00</span>
-                </div>
+                <span class="val-big" id="val-fuel">0.00<span class="unit-small">L</span></span>
+                <span id="val-money-total" style="font-size:0.7em; color:#0f0">$0.00 Disp.</span>
             </div>
         </div>
     </div>
@@ -81,40 +59,38 @@
         <div class="hud-btn" onclick="abrirHistorial()">📊</div>
         <div class="hud-btn" onclick="pegarUbicacion()">📍</div>
         <div class="hud-btn" id="btn-extra" onclick="toggleExtra()">🚀</div>
-        <div class="hud-btn" onclick="alert('Calibración: 0.05 L/KM')">🔧</div>
+        <div class="hud-btn" onclick="abrirCalibracion()">🔧</div>
     </div>
 
     <div class="bottom-controls">
-        <button id="main-action" class="btn-main btn-rodar" onclick="gestionarRuta()">RUTA 🏍️</button>
-        <button id="mark-btn" class="btn-main btn-marker" onclick="abrirModal()" style="display:none;">MARCAR 📍</button>
+        <button id="btn-main" class="btn-main btn-rodar" onclick="controlRuta()">INICIAR RUTA</button>
+        <button id="btn-pause" class="btn-main btn-pause" onclick="pausarRuta()" style="display:none;">PAUSAR ⏸</button>
     </div>
 
-    <!-- MODALES -->
-    <div id="modal-nombre" class="full-modal">
+    <!-- MODAL NOMBRE CLIENTE -->
+    <div id="modal-cliente" class="full-modal">
         <div class="modal-box">
-            <h3 style="margin:0; color:#0f0">CLIENTE / SERVICIO</h3>
-            <input type="text" id="input-nombre" placeholder="Nombre o descripción...">
-            <button class="btn-rodar" style="width:100%; padding:15px; border-radius:10px" onclick="guardarPunto()">GUARDAR ✅</button>
-            <button onclick="document.getElementById('modal-nombre').style.display='none'" style="background:none; color:#888; border:none; width:100%; margin-top:10px;">Cerrar</button>
+            <h3 style="margin:0; color:#ffae00">📍 LLEGADA AL PUNTO</h3>
+            <p style="font-size:0.8em; color:#888">Escribe el nombre del cliente o lugar para marcar el mapa.</p>
+            <input type="text" id="input-cliente" placeholder="Nombre del Cliente...">
+            <button class="btn-main btn-rodar" style="width:100%" onclick="confirmarPausa()">MARCAR Y PAUSAR ✅</button>
+        </div>
+    </div>
+
+    <!-- MODAL CALIBRACIÓN -->
+    <div id="modal-calibrar" class="full-modal">
+        <div class="modal-box">
+            <h3 style="margin:0; color:#0f0">🔧 CALIBRACIÓN DE CONSUMO</h3>
+            <p style="font-size:0.8em; color:#888">Mide cuánto quedó en el tanque para que Lucy aprenda.</p>
+            <input type="number" id="input-km-cal" placeholder="KM recorridos..." step="0.001">
+            <input type="number" id="input-gas-cal" placeholder="Litros consumidos..." step="0.01">
+            <button class="btn-main btn-rodar" style="width:100%" onclick="guardarCalibracion()">RECALCULAR FÓRMULA ⚡</button>
+            <button onclick="cerrarModales()" style="background:none; color:#f00; border:none; width:100%; margin-top:10px;">CANCELAR</button>
         </div>
     </div>
 
     <div id="pantalla-historial">
-        <button onclick="cerrarHistorial()" style="background:#222; color:#fff; border:none; padding:12px; border-radius:10px; width:100%; margin-bottom:10px">⬅ VOLVER</button>
-        <div class="resumen-card">
-            <div class="tab-resumen">
-                <button id="tab-7" class="tab-btn active" onclick="cambiarResumen(7)">7 DÍAS</button>
-                <button id="tab-15" class="tab-btn" onclick="cambiarResumen(15)">15 DÍAS</button>
-                <button id="tab-30" class="tab-btn" onclick="cambiarResumen(30)">MES</button>
-            </div>
-            <div id="resumen-stats" style="text-align:center">
-                <h1 id="res-km" style="margin:0; color:#0f0">0.000 KM</h1>
-                <div style="color:#aaa; font-size:0.9em; margin-bottom:10px">
-                    <span id="res-gas">0.00 L</span> | <span id="res-money">$0.00</span> | <span id="res-time">0h 0m</span>
-                </div>
-                <button onclick="resetPeriodo()" style="background:#f00; color:#fff; border:none; padding:5px 15px; border-radius:5px; font-size:0.7em">RESET SELECCIONADO ⚠</button>
-            </div>
-        </div>
+        <button onclick="cerrarHistorial()" style="background:#222; color:#fff; border:none; padding:12px; border-radius:10px; width:100%; margin-bottom:10px">⬅ VOLVER AL MAPA</button>
         <div id="lista-historial"></div>
     </div>
 
@@ -123,152 +99,127 @@
         let map = L.map('map', {zoomControl: false}).setView([10.174, -67.915], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        // ETIQUETA FIJA
+        // ETIQUETA CASA / TALLER
         L.marker([10.174, -67.915]).addTo(map).bindPopup("<b>Multiservicios Anato SMG</b>").openPopup();
 
         let marker = L.circleMarker([0,0], {radius: 8, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
-        let DB = JSON.parse(localStorage.getItem('lucy_v4_4')) || { 
-            registros: [], factor: 0.05, fuel: 10, 
-            res7: {km:0, gas:0, time:0}, res15: {km:0, gas:0, time:0}, res30: {km:0, gas:0, time:0} 
-        };
         
-        let rodando = false, modoExtra = false, crono;
-        let dTotal = 0, dExtra = 0, tTotal = 0, tExtra = 0, ultimaPos = null, periodoActual = 7;
+        // BASE DE DATOS
+        let DB = JSON.parse(localStorage.getItem('lucy_data')) || {
+            registros: [], factor: 0.05, fuel: 14, res7: {km:0, gas:0, time:0}
+        };
+
+        let estado = "parado"; // parado, rodando, pausado
+        let dTotal = 0, tTotal = 0, crono, ultimaPos = null;
 
         navigator.geolocation.watchPosition(pos => {
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
-            if(rodando && ultimaPos){
+            if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
-                if(dist > 0.001){ // Detecta cada metro
-                    if(modoExtra) dExtra += dist; else dTotal += dist;
+                if(dist > 0.001){
+                    dTotal += dist;
                     DB.fuel -= (dist * DB.factor);
-                    actualizarStatsPeriodo(dist);
+                    actualizarUI();
                 }
             }
             ultimaPos = p;
-            actualizarUI();
         }, null, {enableHighAccuracy:true});
 
         function actualizarUI(){
-            // RUTA PRINCIPAL (CON METROS)
             document.getElementById('val-km').innerHTML = dTotal.toFixed(3) + '<span class="unit-small">KM</span>';
             document.getElementById('val-time').innerText = formatTime(tTotal);
-            document.getElementById('val-gas-route').innerText = (dTotal * DB.factor).toFixed(2) + "L";
-            document.getElementById('val-money-route').innerText = "$" + (dTotal * DB.factor * 0.5 * 20).toFixed(2);
-
-            // TANQUE (BAJANDO)
             document.getElementById('val-fuel').innerHTML = DB.fuel.toFixed(2) + '<span class="unit-small">L</span>';
             document.getElementById('val-money-total').innerText = "$" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
+            document.getElementById('val-money-route').innerText = "$" + (dTotal * DB.factor * 0.5).toFixed(2);
             
-            // ALERTA 4 LITROS
-            const panelFuel = document.getElementById('panel-fuel');
-            if(DB.fuel <= 4) panelFuel.classList.add('fuel-danger');
-            else panelFuel.classList.remove('fuel-danger');
-
-            // EXTRA
-            document.getElementById('ex-km').innerHTML = dExtra.toFixed(3) + '<span class="unit-small">KM</span>';
-            document.getElementById('ex-time').innerText = formatTime(tExtra);
-            document.getElementById('ex-money').innerText = "$" + (dExtra * DB.factor * 0.5 * 20).toFixed(2);
+            if(DB.fuel <= 4) document.getElementById('panel-fuel').classList.add('fuel-danger');
+            else document.getElementById('panel-fuel').classList.remove('fuel-danger');
         }
 
-        function gestionarRuta(){
-            rodando = !rodando;
-            const btn = document.getElementById('main-action');
-            if(rodando){
-                btn.innerText = "FINALIZAR 🏁";
+        function controlRuta(){
+            const btn = document.getElementById('btn-main');
+            const btnP = document.getElementById('btn-pause');
+
+            if(estado === "parado" || estado === "pausado"){
+                estado = "rodando";
+                btn.innerText = "FINALIZAR JORNADA 🏁";
                 btn.className = "btn-main btn-stop";
-                document.getElementById('mark-btn').style.display = "block";
-                crono = setInterval(() => { 
-                    if(modoExtra) tExtra++; else tTotal++;
-                    [7, 15, 30].forEach(p => DB['res'+p].time++);
-                    actualizarUI(); 
-                }, 1000);
+                btnP.style.display = "block";
+                btnP.innerText = "PAUSAR ⏸";
+                crono = setInterval(() => { tTotal++; actualizarUI(); }, 1000);
             } else {
-                clearInterval(crono);
-                if(confirm("¿Guardar jornada total?")) {
-                    localStorage.setItem('lucy_v4_4', JSON.stringify(DB));
-                    location.reload();
+                if(confirm("¿Deseas cerrar y guardar la ruta de hoy?")){
+                    finalizarYGuardar();
                 }
             }
         }
 
-        function recargarGasosa(){
-            let l = prompt("¿Cuántos litros hay en el tanque ahora, amo?", DB.fuel.toFixed(1));
-            if(l !== null) { 
-                DB.fuel = parseFloat(l); // CALIBRACIÓN DIRECTA, NO SUMA
-                actualizarUI(); 
+        function pausarRuta(){
+            if(estado === "rodando"){
+                document.getElementById('modal-cliente').style.display = 'block';
+            } else if(estado === "pausado"){
+                estado = "rodando";
+                document.getElementById('btn-pause').innerText = "PAUSAR ⏸";
+                crono = setInterval(() => { tTotal++; actualizarUI(); }, 1000);
             }
         }
 
-        function toggleExtra(){
-            modoExtra = !modoExtra;
-            document.getElementById('btn-extra').style.background = modoExtra ? "#ff00ea" : "#000";
-            document.getElementById('panel-extra-data').style.display = modoExtra ? "block" : "none";
+        function confirmarPausa(){
+            let nombre = document.getElementById('input-cliente').value || "Cliente";
+            estado = "pausado";
+            clearInterval(crono);
+            document.getElementById('modal-cliente').style.display = 'none';
+            document.getElementById('btn-pause').innerText = "REANUDAR ▶";
+            L.marker(ultimaPos).addTo(map).bindPopup("<b>" + nombre + "</b>").openPopup();
         }
 
-        function pegarUbicacion(){
-            let link = prompt("Pega el link de WhatsApp:");
-            if(link) alert("Ruta trazada desde tu ubicación actual.");
-        }
-
-        function guardarPunto(){
-            let nom = document.getElementById('input-nombre').value || "Servicio";
-            let reg = { 
-                id: Date.now(), cliente: nom, km: dTotal, t: tTotal, 
-                gas: (dTotal * DB.factor).toFixed(2), fecha: new Date().toLocaleDateString(), 
-                ex_km: dExtra, ex_t: tExtra
+        function finalizarYGuardar(){
+            let registro = {
+                id: Date.now(),
+                fecha: new Date().toLocaleString(),
+                km: dTotal.toFixed(3),
+                tiempo: formatTime(tTotal),
+                costo: (dTotal * DB.factor * 0.5).toFixed(2)
             };
-            DB.registros.unshift(reg);
-            localStorage.setItem('lucy_v4_4', JSON.stringify(DB));
-            document.getElementById('modal-nombre').style.display = 'none';
-            L.marker(ultimaPos).addTo(map).bindPopup(nom).openPopup();
+            DB.registros.unshift(registro);
+            localStorage.setItem('lucy_data', JSON.stringify(DB));
+            location.reload();
+        }
+
+        function ajustarTanque(){
+            let nuevo = prompt("¿Cuántos litros reales tiene el tanque ahora?", DB.fuel.toFixed(2));
+            if(nuevo) { DB.fuel = parseFloat(nuevo); actualizarUI(); }
+        }
+
+        function abrirCalibracion(){ document.getElementById('modal-calibrar').style.display = 'block'; }
+        
+        function guardarCalibracion(){
+            let km = parseFloat(document.getElementById('input-km-cal').value);
+            let gas = parseFloat(document.getElementById('input-gas-cal').value);
+            if(km > 0 && gas > 0){
+                DB.factor = gas / km;
+                alert("Calibración exitosa: " + DB.factor.toFixed(4) + " L/KM");
+                cerrarModales();
+            }
         }
 
         function abrirHistorial(){
             const lista = document.getElementById('lista-historial');
             lista.innerHTML = DB.registros.map(r => `
                 <div class="card-hist">
-                    <button class="btn-del" onclick="eliminarRegistro(${r.id})">🗑</button>
-                    <b>🏠 ${r.cliente}</b><br><small>📅 ${r.fecha}</small>
-                    <div style="color:#0f0; font-size:0.75em; margin-top:5px">
-                        <b>Ruta:</b> ${r.km.toFixed(3)}km | ${r.gas}L | ${formatTime(r.t)}<br>
-                        <span style="color:#ff00ea"><b>Extra:</b> ${r.ex_km.toFixed(3)}km | ${formatTime(r.ex_t)}</span>
-                    </div>
+                    <b>📅 ${r.fecha}</b><br>
+                    <span style="color:#0f0">${r.km} KM | ${r.tiempo} | Costo Gas: $${r.costo}</span>
                 </div>
             `).join('');
-            cambiarResumen(periodoActual);
             document.getElementById('pantalla-historial').style.display = 'block';
-        }
-
-        function cambiarResumen(p){
-            periodoActual = p;
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-'+p).classList.add('active');
-            let data = DB['res'+p];
-            document.getElementById('res-km').innerText = data.km.toFixed(3) + " KM";
-            document.getElementById('res-gas').innerText = data.gas.toFixed(2) + " L";
-            document.getElementById('res-money').innerText = "$" + (data.gas * 0.5).toFixed(2);
-            document.getElementById('res-time').innerText = Math.floor(data.time/3600) + "h " + Math.floor((data.time%3600)/60) + "m";
-        }
-
-        function resetPeriodo(){
-            if(confirm("¿Resetear solo los datos de "+periodoActual+" días?")){
-                DB['res'+periodoActual] = {km:0, gas:0, time:0};
-                localStorage.setItem('lucy_v4_4', JSON.stringify(DB));
-                cambiarResumen(periodoActual);
-            }
-        }
-
-        function actualizarStatsPeriodo(d){
-            [7, 15, 30].forEach(p => {
-                DB['res'+p].km += d;
-                DB['res'+p].gas += (d * DB.factor);
-            });
         }
 
         function formatTime(s){ return new Date(s * 1000).toISOString().substr(11, 8); }
         function cerrarHistorial(){ document.getElementById('pantalla-historial').style.display = 'none'; }
+        function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display='none'); }
+        
+        actualizarUI();
     </script>
 </body>
 </html>
