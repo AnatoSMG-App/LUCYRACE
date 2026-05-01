@@ -46,7 +46,7 @@
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
         .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; font-size: 0.85em; position: relative; }
         .card-extra-fix { background: rgba(255, 0, 255, 0.1); border: 1px solid #ff00ff; border-radius: 8px; padding: 8px; margin-top: 10px; }
-        .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; }
+        .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; position: relative; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; margin-top: 5px; }
     </style>
 </head>
@@ -218,6 +218,7 @@
             actualizarUI();
         }
 
+        // CORRECCIÓN 1: El tiempo del EXTRA ahora suma a los acumulados siempre que esté activo
         function iniciarCronometro(){
             if(cronoMaestro) clearInterval(cronoMaestro);
             cronoMaestro = setInterval(() => {
@@ -225,7 +226,14 @@
                     tTotal++;
                     ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
                 }
-                if(extraActivo) tExtra++;
+                
+                if(extraActivo) {
+                    tExtra++;
+                    // Si no está ya sumando por 'rodando', sumamos al acumulado
+                    if(estado !== "rodando") {
+                        ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
+                    }
+                }
                 actualizarUI();
             }, 1000);
         }
@@ -264,10 +272,13 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
+        // CORRECCIÓN 2: Botones de reset independientes añadidos al mapa de resumen
         function abrirHistorial(){
+            const titulos = { 'siete': '7 DÍAS', 'quince': '15 DÍAS', 'mes': '30 DÍAS' };
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
                 <div class="barra-resumen">
-                    <b style="color:#fff;">RESUMEN ${p === 'siete' ? '7' : p === 'quince' ? '15' : '30'} DÍAS:</b>
+                    <span onclick="resetRango('${p}')" style="position:absolute; right:10px; top:8px; color:red; cursor:pointer; font-weight:bold; font-size:1.2em;">❌</span>
+                    <b style="color:#fff;">RESUMEN ${titulos[p]}:</b>
                     <div class="grid-4-jinetes">
                         <div class="color-km">🛣️<br>${DB[p].km.toFixed(3)}</div>
                         <div class="color-time">⏱️<br>${formatTime(DB[p].time)}</div>
@@ -301,6 +312,16 @@
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
+        }
+
+        // Nueva función de reset para los acumulados
+        function resetRango(p) {
+            const tit = { 'siete': '7 días', 'quince': '15 días', 'mes': '30 días' };
+            if(confirm(`¿Amo, desea poner en CERO el resumen de ${tit[p]}?`)) {
+                DB[p] = {km:0, time:0, gas:0, money:0};
+                actualizarUI();
+                abrirHistorial();
+            }
         }
 
         function procesarUbicacion() {
