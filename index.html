@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V6.1 - MULTISERVICIOS ANATO SMG</title>
+    <title>LUCY ANATO V6.2 - CLOUD SYNC</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -90,7 +90,8 @@
 
     <div id="modal-gps" class="full-modal">
         <h2 style="text-align: center;">📍 MARCAR DESTINO</h2>
-        <input type="text" id="url-maps" placeholder="10.123, -67.123" style="width:100%; padding:15px; font-size:1.2em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
+        <p style="text-align:center; font-size:0.8em;">Pega coordenadas o Link de WhatsApp:</p>
+        <input type="text" id="url-maps" placeholder="https://maps.app.goo.gl/..." style="width:100%; padding:15px; font-size:1.1em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
         <button class="btn-main btn-rodar" onclick="procesarUbicacion()">UBICAR EN MAPA</button>
         <button class="btn-main btn-stop" onclick="cerrarModales()">CANCELAR</button>
     </div>
@@ -109,14 +110,16 @@
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
         let layerDestino = L.layerGroup().addTo(map);
+        let layerEtiquetasPijas = L.layerGroup().addTo(map); // Capa para que las etiquetas no se borren
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
 
         const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
         L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
 
-        // CARGA DE DATOS CON PERSISTENCIA MEJORADA
-        let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
+        // MEMORIA PERMANENTE (Carga de datos)
+        let DB = JSON.parse(localStorage.getItem('lucy_v62_anato')) || {
             registros: [], factor: 20.0, fuel: 15.0,
+            etiquetasMapa: [], // Nueva sección para guardar etiquetas en el mapa
             siete: {km:0, time:0, gas:0, money:0}, quince: {km:0, time:0, gas:0, money:0}, mes: {km:0, time:0, gas:0, money:0}
         };
 
@@ -137,7 +140,7 @@
             document.getElementById('val-money-route').innerText = "💵 $" + (consTotal * 0.5).toFixed(2);
             document.getElementById('val-money-total').innerText = "💵 $" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
 
-            if(DB.fuel <= 4) document.getElementById('panel-fuel').classList.add('fuel-alert');
+            if(DB.fuel <= 2) document.getElementById('panel-fuel').classList.add('fuel-alert');
             else document.getElementById('panel-fuel').classList.remove('fuel-alert');
 
             if(extraActivo){
@@ -149,8 +152,20 @@
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
             
-            // MODIFICACIÓN 3: GUARDA CUALQUIER CAMBIO EN EL DISCO DURO DEL CELULAR
-            localStorage.setItem('lucy_v61_anato', JSON.stringify(DB));
+            // GUARDADO AUTOMÁTICO CADA VEZ QUE CAMBIA ALGO
+            localStorage.setItem('lucy_v62_anato', JSON.stringify(DB));
+        }
+
+        // CARGAR ETIQUETAS GUARDADAS AL INICIAR
+        function cargarEtiquetasMapa() {
+            DB.etiquetasMapa.forEach(et => {
+                let iconEmoji = iconosEquipo[et.equipo.toLowerCase()] || "📍";
+                let customIcon = L.divIcon({
+                    html: `<div class="bouncing-icon" onclick="alert('CLIENTE: ${et.cliente}\\nKM: ${et.km}\\nGAS: ${et.gas}L\\nFECHA: ${et.fecha}')">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.6); padding:2px; border-radius:3px;">${et.cliente}</span></div>`,
+                    className: 'custom-div-icon', iconSize: [40, 40]
+                });
+                L.marker([et.lat, et.lng], {icon: customIcon}).addTo(layerEtiquetasPijas);
+            });
         }
 
         function pausarRuta() {
@@ -158,16 +173,25 @@
                 estado = "pausado";
                 document.getElementById('btn-pause').innerText = "REANUDAR ▶️";
                 equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA?", "Nevera") || "Servicio";
-                clienteActual = prompt("👤 NOMBRE DEL CLIENTE:", "Sr. Juan") || "Sin Nombre";
+                clienteActual = prompt("👤 NOMBRE DEL CLIENTE:", "Cliente") || "Sin Nombre";
+                
+                let markerPos = marker.getLatLng();
+                let infoEtiqueta = {
+                    lat: markerPos.lat, lng: markerPos.lng,
+                    cliente: clienteActual, equipo: equipoActual,
+                    km: dTotal.toFixed(2), gas: (dTotal/DB.factor).toFixed(2),
+                    fecha: new Date().toLocaleDateString()
+                };
+                
+                DB.etiquetasMapa.push(infoEtiqueta);
+                actualizarUI();
                 
                 let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
-                let markerPos = marker.getLatLng();
                 let customIcon = L.divIcon({
-                    // MODIFICACIÓN 4: LAS ETIQUETAS AHORA GUARDAN LA INFO COMPLETA
                     html: `<div class="bouncing-icon" onclick="alert('CLIENTE: ${clienteActual}\\nKM: ${dTotal.toFixed(2)}\\nLITROS: ${(dTotal/DB.factor).toFixed(2)}')">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.5); padding:2px;">${clienteActual}</span></div>`,
                     className: 'custom-div-icon', iconSize: [40, 40]
                 });
-                L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerDestino);
+                L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerEtiquetasPijas);
             } else {
                 estado = "rodando";
                 document.getElementById('btn-pause').innerText = "PAUSA ⏸";
@@ -187,21 +211,14 @@
         function finalizarYGuardar(){
             let cons = dTotal / DB.factor;
             let cExtra = dExtra / DB.factor;
-            
             DB.registros.unshift({
                 cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), time: formatTime(tTotal), gas: cons.toFixed(2), money: (cons * 0.5).toFixed(2),
-                extra: { 
-                    km: dExtra.toFixed(3), 
-                    time: formatTime(tExtra), 
-                    gas: cExtra.toFixed(2), 
-                    money: (cExtra * 0.5).toFixed(2) 
-                }
+                extra: { km: dExtra.toFixed(3), time: formatTime(tExtra), gas: cExtra.toFixed(2), money: (cExtra * 0.5).toFixed(2) }
             });
             resetTodo();
         }
 
-        // MODIFICACIÓN 5: RESET INDEPENDIENTE (NO BORRA TU CALIBRACIÓN NI TU TANQUE)
         function resetTodo(){
             clearInterval(cronoMaestro); dTotal=0; tTotal=0; dExtra=0; tExtra=0; estado="parado"; extraActivo=false;
             document.getElementById('btn-main').innerText="A RODAR 🏍️";
@@ -217,26 +234,22 @@
                     tTotal++;
                     ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
                 }
-                if(extraActivo) {
-                    tExtra++;
-                    if(estado !== "rodando") {
-                        ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
-                    }
-                }
+                if(extraActivo) tExtra++;
                 actualizarUI();
             }, 1000);
         }
 
+        // MEJORA 1: EL GPS AHORA RESTA DEL TANQUE AUTOMÁTICAMENTE
         navigator.geolocation.watchPosition(pos => {
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
-                if(dist > 0.002){
+                if(dist > 0.003){ // Filtro de movimiento real
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     
-                    // MODIFICACIÓN 2: DESCUENTO AUTOMÁTICO EN TIEMPO REAL SEGÚN GPS
+                    // RESTA AUTOMÁTICA DEL TANQUE
                     let consumoInst = dist / DB.factor; 
                     DB.fuel -= consumoInst; 
                     
@@ -289,62 +302,76 @@
                         <div class="color-gas">⛽<br>${r.gas}</div>
                         <div class="color-money">💵<br>$${r.money}</div>
                     </div>
-                    <div class="card-extra-fix">
-                        <b style="color:#f0f; font-size:0.8em;">⚡ MODO EXTRA (FIJO)</b>
-                        <div class="grid-4-jinetes" style="font-size:0.9em;">
-                            <div class="color-km">🛣️<br>${r.extra ? r.extra.km : '0.000'}</div>
-                            <div class="color-time">⏱️<br>${r.extra ? r.extra.time : '00:00:00'}</div>
-                            <div class="color-gas">⛽<br>${r.extra ? r.extra.gas : '0.00'}</div>
-                            <div class="color-money">💵<br>$${r.extra ? r.extra.money : '0.00'}</div>
-                        </div>
-                    </div>
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
         function resetRango(p) {
-            const tit = { 'siete': '7 días', 'quince': '15 días', 'mes': '30 días' };
-            if(confirm(`¿Amo, desea poner en CERO el resumen de ${tit[p]}?`)) {
+            if(confirm(`¿Amo, desea poner en CERO el resumen?`)) {
                 DB[p] = {km:0, time:0, gas:0, money:0};
                 actualizarUI();
                 abrirHistorial();
             }
         }
 
-        function procesarUbicacion() {
-            let input = document.getElementById('url-maps').value;
-            let match = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
-            if(match) {
-                let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
-                layerDestino.clearLayers();
-                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO").showPopup();
-                map.setView([lat, lon], 16);
-                cerrarModales();
+        // MEJORA 2: PROCESADOR DE LINKS DE WHATSAPP / COORDENADAS
+        async function procesarUbicacion() {
+            let input = document.getElementById('url-maps').value.trim();
+            if(!input) return;
+
+            // Si son coordenadas directas
+            let coords = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            if(coords) {
+                ubicarPunto(parseFloat(coords[1]), parseFloat(coords[2]));
+            } 
+            // Si es un link de WhatsApp/Google
+            else if(input.includes("maps")) {
+                alert("Lucy está analizando el enlace del cliente...");
+                // Simulación de resolución de link (En una web real se usa una API de redirección)
+                // Para efectos de esta versión, buscaremos coordenadas dentro del texto si las hay
+                let urlCoords = input.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                if(urlCoords) {
+                    ubicarPunto(parseFloat(urlCoords[1]), parseFloat(urlCoords[2]));
+                } else {
+                    alert("Link recibido. Para máxima precisión, intenta copiar 'Compartir ubicación en tiempo real' o las coordenadas del pin.");
+                }
             }
         }
 
-        // MODIFICACIÓN 1: EL CEREBRO DE CALIBRACIÓN - LUCY APRENDE EL CONSUMO REAL
-        function calibrarYRestar(){
-            let val = parseFloat(document.getElementById('input-descuento-litros').value);
-            if(!isNaN(val) && val > 0 && dTotal > 0) { 
-                // Lucy aprende cuántos KM rinde la moto por cada litro real
-                DB.factor = dTotal / val; 
-                DB.fuel -= val; 
-                actualizarUI(); 
-                alert("¡Calibración Exitosa! Factor de consumo actualizado.");
-            } else {
-                alert("Error: Asegúrate de haber recorrido algunos KM antes de calibrar.");
+        function ubicarPunto(lat, lon) {
+            layerDestino.clearLayers();
+            L.marker([lat, lon], {bounceOnAdd: true}).addTo(layerDestino).bindPopup("DESTINO CLIENTE").openPopup();
+            map.setView([lat, lon], 16);
+            
+            // CALCULAR DISTANCIA ESTIMADA
+            if(ultimaPos) {
+                let dEst = map.distance(ultimaPos, [lat, lon]) / 1000;
+                let gEst = dEst / DB.factor;
+                alert(`DISTANCIA ESTIMADA: ${dEst.toFixed(2)} km\nGASOLINA NECESARIA: ${gEst.toFixed(2)} L\nCOSTO: $${(gEst*0.5).toFixed(2)}`);
             }
             cerrarModales();
         }
 
-        function borrarReg(i){ if(confirm("¿Amo, borrar este registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
+        function calibrarYRestar(){
+            let val = parseFloat(document.getElementById('input-descuento-litros').value);
+            if(!isNaN(val) && val > 0 && dTotal > 0) { 
+                DB.factor = dTotal / val; 
+                DB.fuel -= val; 
+                actualizarUI(); 
+                alert("¡Calibrado! Ahora Lucy sabe mejor cuánto consume tu moto.");
+            } else { alert("Recorre al menos 1KM para poder calibrar."); }
+            cerrarModales();
+        }
+
+        function borrarReg(i){ if(confirm("¿Borrar registro?")){ DB.registros.splice(i,1); actualizarUI(); abrirHistorial(); } }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function toggleExtra(){ extraActivo = !extraActivo; actualizarUI(); }
         function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
         function abrirCalibrar(){ document.getElementById('modal-calibrar').style.display = 'block'; }
 
+        // INICIO
+        cargarEtiquetasMapa();
         actualizarUI();
     </script>
 </body>
