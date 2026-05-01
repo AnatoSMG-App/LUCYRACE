@@ -8,41 +8,28 @@
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
-        
-        /* PANELES SUPERIORES */
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
         .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
-        
-        /* COLORES SENSORES */
         .color-km { color: #ffeb3b !important; } 
         .color-gas { color: #ff9800 !important; } 
         .color-time { color: #00e5ff !important; } 
         .color-money { color: #00ff00 !important; }
-
         .val-big { font-size: 1.5em; font-weight: 900; line-height: 1; cursor: pointer; }
         .unit-small { font-size: 0.5em; color: #aaa; margin-left: 2px; }
         .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
-        
-        /* ALERTAS Y ANIMACIONES */
         @keyframes alert-red { 0% { background: #f00; } 50% { background: #300; } 100% { background: #f00; } }
         .fuel-alert { animation: alert-red 0.6s infinite !important; border-color: #fff !important; }
-        
         @keyframes bounce-icon { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.2); } }
         .bouncing-icon { animation: bounce-icon 1s infinite; font-size: 30px; text-align: center; }
-
-        /* PANEL EXTRA RAYO */
         #extra-float { position: absolute; top: 130px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
         .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
-        
         .side-hud { position: absolute; right: 10px; bottom: 120px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
         .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        
         .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 94%; display: flex; gap: 10px; z-index: 1000; }
         .btn-main { flex: 1; padding: 18px; border-radius: 15px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .btn-rodar { background: #0f0; color: #000; }
         .btn-stop { background: #f00; color: #fff; }
-        
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
         .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; font-size: 0.85em; position: relative; }
         .card-extra-fix { background: rgba(255, 0, 255, 0.1); border: 1px solid #ff00ff; border-radius: 8px; padding: 8px; margin-top: 10px; }
@@ -110,8 +97,9 @@
 
     <div id="modal-calibrar" class="full-modal">
         <h2 style="text-align: center;">🔧 CALIBRACIÓN</h2>
+        <p style="text-align:center; font-size:0.8em; color:#aaa;">¿Cuántos litros gastaste para recorrer los KM actuales?</p>
         <input type="number" id="input-descuento-litros" value="1.0" step="0.1" style="width:100%; padding:20px; font-size:2em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center; border-radius: 15px;">
-        <button class="btn-main btn-rodar" onclick="calibrarYRestar()">DESCONTAR DEL TANQUE</button>
+        <button class="btn-main btn-rodar" onclick="calibrarYRestar()">CALIBRAR Y DESCONTAR</button>
         <button class="btn-main btn-stop" onclick="cerrarModales()">CERRAR</button>
     </div>
 
@@ -126,6 +114,7 @@
         const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
         L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
 
+        // CARGA DE DATOS CON PERSISTENCIA MEJORADA
         let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
             registros: [], factor: 20.0, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0}, quince: {km:0, time:0, gas:0, money:0}, mes: {km:0, time:0, gas:0, money:0}
@@ -160,6 +149,7 @@
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
             
+            // MODIFICACIÓN 3: GUARDA CUALQUIER CAMBIO EN EL DISCO DURO DEL CELULAR
             localStorage.setItem('lucy_v61_anato', JSON.stringify(DB));
         }
 
@@ -173,7 +163,8 @@
                 let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
                 let markerPos = marker.getLatLng();
                 let customIcon = L.divIcon({
-                    html: `<div class="bouncing-icon">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.5); padding:2px;">${clienteActual}</span></div>`,
+                    // MODIFICACIÓN 4: LAS ETIQUETAS AHORA GUARDAN LA INFO COMPLETA
+                    html: `<div class="bouncing-icon" onclick="alert('CLIENTE: ${clienteActual}\\nKM: ${dTotal.toFixed(2)}\\nLITROS: ${(dTotal/DB.factor).toFixed(2)}')">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.5); padding:2px;">${clienteActual}</span></div>`,
                     className: 'custom-div-icon', iconSize: [40, 40]
                 });
                 L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerDestino);
@@ -210,6 +201,7 @@
             resetTodo();
         }
 
+        // MODIFICACIÓN 5: RESET INDEPENDIENTE (NO BORRA TU CALIBRACIÓN NI TU TANQUE)
         function resetTodo(){
             clearInterval(cronoMaestro); dTotal=0; tTotal=0; dExtra=0; tExtra=0; estado="parado"; extraActivo=false;
             document.getElementById('btn-main').innerText="A RODAR 🏍️";
@@ -225,7 +217,6 @@
                     tTotal++;
                     ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
                 }
-                
                 if(extraActivo) {
                     tExtra++;
                     if(estado !== "rodando") {
@@ -245,7 +236,7 @@
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     
-                    /* CIRUGÍA 1: CÁLCULO DE CONSUMO Y RESTA AUTOMÁTICA DEL TANQUE */
+                    // MODIFICACIÓN 2: DESCUENTO AUTOMÁTICO EN TIEMPO REAL SEGÚN GPS
                     let consumoInst = dist / DB.factor; 
                     DB.fuel -= consumoInst; 
                     
@@ -292,14 +283,12 @@
                 <div class="card-hist">
                     <span style="position:absolute; right:10px; top:10px; cursor:pointer;" onclick="borrarReg(${i})">🗑️</span>
                     <b class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'} ${r.cliente}</b> <small style="color:#aaa;">${r.fecha}</small>
-                    
                     <div class="grid-4-jinetes">
                         <div class="color-km">🛣️<br>${r.km}</div>
                         <div class="color-time">⏱️<br>${r.time}</div>
                         <div class="color-gas">⛽<br>${r.gas}</div>
                         <div class="color-money">💵<br>$${r.money}</div>
                     </div>
-
                     <div class="card-extra-fix">
                         <b style="color:#f0f; font-size:0.8em;">⚡ MODO EXTRA (FIJO)</b>
                         <div class="grid-4-jinetes" style="font-size:0.9em;">
@@ -335,15 +324,17 @@
             }
         }
 
-        /* CIRUGÍA 2: EL CEREBRO DE CALIBRACIÓN - AHORA LUCY APRENDE EL CONSUMO REAL */
+        // MODIFICACIÓN 1: EL CEREBRO DE CALIBRACIÓN - LUCY APRENDE EL CONSUMO REAL
         function calibrarYRestar(){
             let val = parseFloat(document.getElementById('input-descuento-litros').value);
-            if(!isNaN(val) && val > 0) { 
-                // Lucy aprende cuántos KM rinde la moto por cada litro
+            if(!isNaN(val) && val > 0 && dTotal > 0) { 
+                // Lucy aprende cuántos KM rinde la moto por cada litro real
                 DB.factor = dTotal / val; 
-                
                 DB.fuel -= val; 
                 actualizarUI(); 
+                alert("¡Calibración Exitosa! Factor de consumo actualizado.");
+            } else {
+                alert("Error: Asegúrate de haber recorrido algunos KM antes de calibrar.");
             }
             cerrarModales();
         }
