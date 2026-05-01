@@ -3,53 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V6.0 - CISNE DE ORO</title>
+    <title>LUCY ANATO V6.1 - MULTISERVICIOS ANATO SMG</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
+        
+        /* PANELES SUPERIORES */
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
         .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
         
-        @keyframes bounce-in { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); } 70% { transform: scale(0.9); } 100% { transform: scale(1); opacity: 1; } }
-        .animated-icon { animation: bounce-in 0.6s ease-out; }
-        @keyframes alert-fuel-red { 0% { background: #f00; } 50% { background: #600; } 100% { background: #f00; } }
-        .fuel-alert { animation: alert-fuel-red 0.5s infinite !important; border-color: #fff !important; }
-        
-        .color-km { color: #ffeb3b !important; }
-        .color-gas { color: #ff9800 !important; }
-        .color-time { color: #00e5ff !important; }
+        /* COLORES SENSORES */
+        .color-km { color: #ffeb3b !important; } 
+        .color-gas { color: #ff9800 !important; } 
+        .color-time { color: #00e5ff !important; } 
         .color-money { color: #00ff00 !important; }
 
-        .val-big { font-size: 1.5em; font-weight: 900; line-height: 1; }
+        .val-big { font-size: 1.5em; font-weight: 900; line-height: 1; cursor: pointer; }
         .unit-small { font-size: 0.5em; color: #aaa; margin-left: 2px; }
         .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
         
+        /* ALERTAS Y ANIMACIONES */
+        @keyframes alert-red { 0% { background: #f00; } 50% { background: #300; } 100% { background: #f00; } }
+        .fuel-alert { animation: alert-red 0.6s infinite !important; border-color: #fff !important; }
+        
+        @keyframes bounce-icon { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.2); } }
+        .bouncing-icon { animation: bounce-icon 1s infinite; font-size: 30px; text-align: center; }
+
+        /* PANEL EXTRA RAYO */
         #extra-float { position: absolute; top: 130px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
         .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
         
         .side-hud { position: absolute; right: 10px; bottom: 120px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
-        .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; }
+        .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         
         .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 94%; display: flex; gap: 10px; z-index: 1000; }
-        .btn-main { flex: 1; padding: 18px; border-radius: 15px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; }
+        .btn-main { flex: 1; padding: 18px; border-radius: 15px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .btn-rodar { background: #0f0; color: #000; }
         .btn-stop { background: #f00; color: #fff; }
         
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
-        .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; font-size: 0.9em; }
+        .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; font-size: 0.85em; position: relative; }
+        .card-extra { border-left-color: #f0f; background: #220022; }
+        .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; }
+        .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div id="map"></div>
 
+    <!-- PANEL EXTRA ⚡ -->
     <div id="extra-float">
-        <span style="font-size: 0.8em; font-weight: 900; color: #fff;">⚡ EXTRA: <span id="ex-nombre">MANIOBRA</span></span>
+        <span style="font-size: 0.8em; font-weight: 900; color: #fff;">⚡ MANIOBRA EXTRA</span>
         <div class="extra-grid">
             <div class="color-km">🛣️<br><span id="ex-km">0.000</span></div>
             <div class="color-time">⏱️<br><span id="ex-time">00:00:00</span></div>
-            <div class="color-gas">⛽<br><span id="ex-gas">0.00</span></div>
+            <div class="color-gas">⛽<br><span id="ex-gas">00.00</span></div>
             <div class="color-money">💵<br>$<span id="ex-money">0.00</span></div>
         </div>
     </div>
@@ -58,15 +68,15 @@
         <div class="row-panels">
             <div class="panel-data" style="border-color: #fff;">
                 <span class="txt-label color-time">⏱️ <span id="val-time">00:00:00</span></span><br>
-                <span class="val-big color-km" id="val-km">0.000<span class="unit-small">KM</span></span>
+                <span class="val-big color-km" id="val-km" onclick="ajusteManual('km')">0.000<span class="unit-small">KM</span></span>
                 <div style="display:flex; justify-content: space-between; margin-top:5px;">
-                    <span id="val-gas-trip" class="color-gas" style="font-weight:bold; font-size:0.8em;">⛽ 0.00 L</span>
+                    <span id="val-gas-trip" class="color-gas" style="font-weight:bold; font-size:0.8em;">⛽ 00.00 L</span>
                     <span id="val-money-route" class="color-money" style="font-weight:bold; font-size:0.8em;">💵 $0.00</span>
                 </div>
             </div>
-            <div class="panel-data" id="panel-fuel" onclick="abrirFuelModal()">
-                <span class="txt-label">⛽ TANQUE</span><br>
-                <span class="val-big color-gas" id="val-fuel">00.00<span class="unit-small">L</span></span>
+            <div class="panel-data" id="panel-fuel" onclick="ajusteManual('gas')">
+                <span class="txt-label">⛽ TANQUE LONCIN</span><br>
+                <span class="val-big color-gas" id="val-fuel">15.00<span class="unit-small">L</span></span>
                 <span id="val-money-total" class="color-money" style="font-size:0.7em; font-weight:bold;">💵 $0.00 Disp.</span>
             </div>
         </div>
@@ -74,7 +84,7 @@
 
     <div class="side-hud">
         <div class="hud-btn" onclick="abrirHistorial()">📊</div>
-        <div class="hud-btn" id="btn-extra" onclick="toggleExtra()">⚡</div>
+        <div class="hud-btn" id="btn-extra" onclick="toggleExtra()" style="color:#f0f; border-color:#f0f;">⚡</div>
         <div class="hud-btn" onclick="abrirGPS()">📍</div>
         <div class="hud-btn" onclick="abrirCalibrar()">🔧</div>
         <div class="hud-btn" onclick="location.reload()" style="border-color:#f00;">🔄</div>
@@ -85,17 +95,27 @@
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00; color:#000;">PAUSA ⏸</button>
     </div>
 
+    <!-- MODALES -->
     <div id="pantalla-historial" class="full-modal">
-        <h2 style="color:#0f0;">📊 REGISTRO ANATO</h2>
-        <div id="lista-registros"></div>
-        <button class="btn-main btn-stop" onclick="cerrarModales()">CERRAR</button>
+        <h2 style="color:#0f0; border-bottom: 2px solid #0f0; text-align: center;">📊 REGISTROS ANATO</h2>
+        <div id="contenedor-resumen"></div>
+        <div id="lista-registros" style="margin-top: 15px;"></div>
+        <button class="btn-main btn-stop" onclick="cerrarModales()" style="margin-top: 20px; width: 100%;">CERRAR</button>
     </div>
 
     <div id="modal-gps" class="full-modal">
-        <h2>📍 UBICACIÓN WHATSAPP</h2>
-        <input type="text" id="url-maps" placeholder="Pegar Coordenadas (lat,lon)" style="width:100%; padding:20px; font-size:1.2em;">
-        <button class="btn-main btn-rodar" onclick="procesarUbicacion()">TRAZAR RUTA</button>
-        <button class="btn-main btn-stop" onclick="cerrarModales()">CANCELAR</button>
+        <h2 style="text-align: center;">📍 MARCAR DESTINO</h2>
+        <p style="font-size: 0.8em; text-align: center;">Pegue coordenadas o Link de Maps</p>
+        <input type="text" id="url-maps" placeholder="10.123, -67.123" style="width:100%; padding:15px; font-size:1.2em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
+        <button class="btn-main btn-rodar" onclick="procesarUbicacion()" style="width: 100%; margin-top: 15px;">UBICAR EN MAPA</button>
+        <button class="btn-main btn-stop" onclick="cerrarModales()" style="width: 100%; margin-top: 10px;">CANCELAR</button>
+    </div>
+
+    <div id="modal-calibrar" class="full-modal">
+        <h2 style="text-align: center;">🔧 CALIBRACIÓN</h2>
+        <input type="number" id="input-descuento-litros" value="1.0" step="0.1" style="width:100%; padding:20px; font-size:2em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center; border-radius: 15px;">
+        <button class="btn-main btn-rodar" onclick="calibrarYRestar()" style="width: 100%; margin-top: 15px;">DESCONTAR DEL TANQUE</button>
+        <button class="btn-main btn-stop" onclick="cerrarModales()" style="width: 100%; margin-top: 10px;">CERRAR</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -103,22 +123,23 @@
         let map = L.map('map', {zoomControl: false}).setView([10.174, -67.915], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        let layerTrayectoria = L.polyline([], {color: '#000', weight: 4}).addTo(map);
-        let layerIconos = L.layerGroup().addTo(map);
-        let markerYo = L.marker([0,0], {icon: L.divIcon({className: 'animated-icon', html: '❄️', iconSize: [30,30]})}).addTo(map).bindTooltip("Multiservicio Anato SMG");
+        let layerDestino = L.layerGroup().addTo(map);
+        let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
 
-        let DB = JSON.parse(localStorage.getItem('lucy_v60_final')) || {
-            registros: [], factor: 0.05, fuel: 14.00,
+        // ICONO FIJO TALLER ANATO
+        const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
+        L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
+
+        let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
+            registros: [], factor: 0.05, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0}, quince: {km:0, time:0, gas:0, money:0}, mes: {km:0, time:0, gas:0, money:0}
         };
 
-        let estado = "parado", extraActivo = false;
-        let dTotal = 0, dExtra = 0, tTotal = 0, tExtra = 0, cronoMaestro, ultimaPos = null, miPos = null;
+        let estado = "parado", extraActivo = false, clienteActual = "Sin Cliente", equipoActual = "Servicio";
+        let dTotal = 0, dExtra = 0, tTotal = 0, tExtra = 0, cronoMaestro, ultimaPos = null;
 
-        const iconosLib = {
-            "nevera": "🧊", "freezer": "🧊", "aire": "❄️", "split": "❄️",
-            "moto": "🏍️", "carro": "🚗", "auto": "🚗", "tienda": "🏪",
-            "electrónica": "⚡", "casa": "🏠", "taller": "🧰", "lavadora": "🧺"
+        const iconosEquipo = {
+            "nevera": "❄️", "aire": "🌬️", "moto": "🏍️", "lavadora": "🌀", "casa": "🏠", "taller": "🔧"
         };
 
         function actualizarUI(){
@@ -126,44 +147,48 @@
             document.getElementById('val-time').innerText = formatTime(tTotal);
             document.getElementById('val-fuel').innerHTML = DB.fuel.toFixed(2) + '<span class="unit-small">L</span>';
             
-            let cTotal = dTotal * DB.factor;
-            document.getElementById('val-gas-trip').innerText = "⛽ " + cTotal.toFixed(2) + " L";
-            document.getElementById('val-money-route').innerText = "💵 $" + (cTotal * 0.5).toFixed(2);
+            let consTotal = dTotal * DB.factor;
+            document.getElementById('val-gas-trip').innerText = "⛽ " + consTotal.toFixed(2) + " L";
+            document.getElementById('val-money-route').innerText = "💵 $" + (consTotal * 0.5).toFixed(2);
             document.getElementById('val-money-total').innerText = "💵 $" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
 
-            if(DB.fuel < 4.0) document.getElementById('panel-fuel').classList.add('fuel-alert');
+            // ALERTA DE RESERVA (4 LITROS)
+            if(DB.fuel <= 4) document.getElementById('panel-fuel').classList.add('fuel-alert');
             else document.getElementById('panel-fuel').classList.remove('fuel-alert');
 
             if(extraActivo){
                 document.getElementById('extra-float').style.display = 'block';
                 document.getElementById('ex-km').innerText = dExtra.toFixed(3);
                 document.getElementById('ex-time').innerText = formatTime(tExtra);
-                let cE = dExtra * DB.factor;
-                document.getElementById('ex-gas').innerText = cE.toFixed(2);
-                document.getElementById('ex-money').innerText = (cE * 0.5).toFixed(2);
-            } else document.getElementById('extra-float').style.display = 'none';
+                let cEx = dExtra * DB.factor;
+                document.getElementById('ex-gas').innerText = cEx.toFixed(2);
+                document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
+            } else { document.getElementById('extra-float').style.display = 'none'; }
             
-            localStorage.setItem('lucy_v60_final', JSON.stringify(DB));
+            localStorage.setItem('lucy_v61_anato', JSON.stringify(DB));
         }
 
         function pausarRuta() {
             if(estado === "rodando") {
                 estado = "pausado";
                 document.getElementById('btn-pause').innerText = "REANUDAR ▶️";
-                let eq = prompt("EQUIPO (Nevera, Aire, Moto...):", "Nevera").toLowerCase();
-                let cli = prompt("NOMBRE CLIENTE:", "Nuevo Cliente");
+                equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA? (Nevera, Aire, Moto...)", "Nevera") || "Servicio";
+                clienteActual = prompt("👤 NOMBRE DEL CLIENTE:", "Sr. Juan") || "Sin Nombre";
                 
-                let icon = "📍";
-                for(let key in iconosLib) { if(eq.includes(key)) icon = iconosLib[key]; }
-
-                let marker = L.marker(miPos, {
-                    icon: L.divIcon({className: 'animated-icon', html: `<div style="font-size:25px;">${icon}</div>`, iconSize:[30,30]})
-                }).addTo(layerIconos).bindPopup(`<b>${eq.toUpperCase()}</b><br>${cli}`);
+                // Icono en el mapa con efecto palpitante
+                let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
+                let markerPos = marker.getLatLng();
+                let customIcon = L.divIcon({
+                    html: `<div class="bouncing-icon">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.5); padding:2px;">${clienteActual}</span></div>`,
+                    className: 'custom-div-icon', iconSize: [40, 40]
+                });
+                
+                let m = L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerDestino);
                 
                 // Borrado de 3 segundos
                 let t;
-                marker.on('mousedown', () => t = setTimeout(() => layerIconos.removeLayer(marker), 3000));
-                marker.on('mouseup', () => clearTimeout(t));
+                m.on('mousedown', () => t = setTimeout(() => { if(confirm("¿Borrar etiqueta?")) map.removeLayer(m); }, 3000));
+                m.on('mouseup', () => clearTimeout(t));
 
             } else {
                 estado = "rodando";
@@ -171,58 +196,79 @@
             }
         }
 
-        function procesarUbicacion() {
-            let inp = document.getElementById('url-maps').value;
-            let m = inp.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
-            if(m && miPos) {
-                let lat = parseFloat(m[1]), lon = parseFloat(m[2]);
-                let dest = [lat, lon];
-                layerTrayectoria.setLatLngs([miPos, dest]);
-                let dist = (map.distance(miPos, dest) / 1000) * 2; // Ida y Vuelta
-                let gas = dist * DB.factor;
-                
-                L.marker(dest).addTo(layerIconos).bindPopup(`
-                    <b>DESTINO CLIENTE</b><br>
-                    Distancia: ${dist.toFixed(2)} km (I/V)<br>
-                    Gasto: ${gas.toFixed(2)}L | $${(gas*0.5).toFixed(2)}
-                `).openPopup();
-                
-                map.fitBounds([miPos, dest]);
-                cerrarModales();
-            }
-        }
-
         function controlRuta(){
             if(estado === "parado"){
                 estado = "rodando";
-                document.getElementById('btn-main').innerText = "FINALIZAR 🏁";
+                document.getElementById('btn-main').innerText = "FINALIZAR RUTA 🏁";
                 document.getElementById('btn-main').className = "btn-main btn-stop";
                 document.getElementById('btn-pause').style.display = "block";
                 iniciarCronometro();
-            } else { location.reload(); }
+            } else { if(confirm("¿Cerrar ruta y guardar en registro?")){ finalizarYGuardar(); } }
+        }
+
+        function finalizarYGuardar(){
+            let cons = dTotal * DB.factor;
+            DB.registros.unshift({
+                cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
+                km: dTotal.toFixed(3), time: formatTime(tTotal), gas: cons.toFixed(2), money: (cons * 0.5).toFixed(2),
+                extra: extraActivo ? { km: dExtra.toFixed(3), time: formatTime(tExtra) } : null
+            });
+            resetTodo();
+        }
+
+        function resetTodo(){
+            clearInterval(cronoMaestro); dTotal=0; tTotal=0; dExtra=0; tExtra=0; estado="parado"; extraActivo=false;
+            document.getElementById('btn-main').innerText="A RODAR 🏍️";
+            document.getElementById('btn-main').className="btn-main btn-rodar";
+            document.getElementById('btn-pause').style.display="none";
+            document.getElementById('btn-pause').innerText = "PAUSA ⏸";
+            actualizarUI();
         }
 
         function iniciarCronometro(){
+            if(cronoMaestro) clearInterval(cronoMaestro);
             cronoMaestro = setInterval(() => {
-                if(estado === "rodando") tTotal++;
+                if(estado === "rodando") {
+                    tTotal++;
+                    ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
+                }
                 if(extraActivo) tExtra++;
                 actualizarUI();
             }, 1000);
         }
 
         navigator.geolocation.watchPosition(pos => {
-            miPos = [pos.coords.latitude, pos.coords.longitude];
-            markerYo.setLatLng(miPos);
+            let p = [pos.coords.latitude, pos.coords.longitude];
+            marker.setLatLng(p);
             if(estado === "rodando" && ultimaPos){
-                let d = map.distance(ultimaPos, miPos) / 1000;
-                if(d > 0.001){
-                    dTotal += d;
-                    if(extraActivo) dExtra += d;
-                    DB.fuel -= (d * DB.factor);
+                let dist = map.distance(ultimaPos, p) / 1000;
+                if(dist > 0.002){
+                    dTotal += dist;
+                    if(extraActivo) dExtra += dist;
+                    let consumoInst = dist * DB.factor;
+                    DB.fuel -= consumoInst;
+                    ['siete', 'quince', 'mes'].forEach(per => {
+                        DB[per].km += dist;
+                        DB[per].gas += consumoInst;
+                        DB[per].money += (consumoInst * 0.5);
+                    });
+                    actualizarUI();
                 }
             }
-            ultimaPos = miPos;
+            ultimaPos = p;
         }, null, {enableHighAccuracy:true});
+
+        // AJUSTE MANUAL AL TOCAR NÚMEROS (Para su prueba de 5km)
+        function ajusteManual(tipo){
+            if(tipo === 'km'){
+                let n = parseFloat(prompt("🛣️ AJUSTE MANUAL DE KM:", dTotal));
+                if(!isNaN(n)) dTotal = n;
+            } else {
+                let n = parseFloat(prompt("⛽ LITROS EN TANQUE:", DB.fuel));
+                if(!isNaN(n)) DB.fuel = n;
+            }
+            actualizarUI();
+        }
 
         function formatTime(s){
             let h = Math.floor(s / 3600);
@@ -231,9 +277,59 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
-        function abrirGPS(){ document.getElementById('modal-gps').style.display='block'; }
+        function abrirHistorial(){
+            document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
+                <div class="barra-resumen">
+                    <b style="color:#fff;">RESUMEN ${p === 'siete' ? '7' : p === 'quince' ? '15' : '30'} DÍAS:</b>
+                    <div class="grid-4-jinetes">
+                        <div class="color-km">🛣️<br>${DB[p].km.toFixed(3)}</div>
+                        <div class="color-time">⏱️<br>${formatTime(DB[p].time)}</div>
+                        <div class="color-gas">⛽<br>${DB[p].gas.toFixed(2)}</div>
+                        <div class="color-money">💵<br>$${DB[p].money.toFixed(2)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
+                <div class="card-hist">
+                    <span style="position:absolute; right:10px; top:10px;" onclick="borrarReg(${i})">🗑️</span>
+                    <b class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'} ${r.cliente}</b> <small>${r.fecha}</small><br>
+                    <span class="color-km">🛣️ ${r.km}</span> | <span class="color-time">⏱️ ${r.time}</span> | <span class="color-gas">⛽ ${r.gas.toFixed(2)} | <b class="color-money">💵 $${r.money}</b>
+                    ${r.extra ? `
+                        <div class="card-hist card-extra" style="margin-top:5px; padding:5px; border-left:3px solid #f0f;">
+                            <b style="color:#f0f;">⚡ EXTRA:</b> <span class="color-km">🛣️ ${r.extra.km}</span> | <span class="color-time">⏱️ ${r.extra.time}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+            document.getElementById('pantalla-historial').style.display = 'block';
+        }
+
+        function procesarUbicacion() {
+            let input = document.getElementById('url-maps').value;
+            let match = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            if(match) {
+                let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
+                layerDestino.clearLayers();
+                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO MARCADO").showPopup();
+                map.setView([lat, lon], 16);
+                cerrarModales();
+            }
+        }
+
+        function calibrarYRestar(){
+            let val = parseFloat(document.getElementById('input-descuento-litros').value);
+            if(!isNaN(val)) { DB.fuel -= val; alert("Se descontaron " + val + "L del tanque."); }
+            cerrarModales();
+            actualizarUI();
+        }
+
+        function borrarReg(i){ if(confirm("¿Borrar registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function toggleExtra(){ extraActivo = !extraActivo; actualizarUI(); }
+        function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
+        function abrirCalibrar(){ document.getElementById('modal-calibrar').style.display = 'block'; }
+
         actualizarUI();
     </script>
 </body>
