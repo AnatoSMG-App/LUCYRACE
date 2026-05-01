@@ -245,7 +245,7 @@
             marker.setLatLng(p);
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
-                if(dist > 0.003){ // Filtro de movimiento real
+                if(dist > 0.001){ // Filtro de movimiento real
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     
