@@ -294,7 +294,7 @@
                 <div class="card-hist">
                     <span style="position:absolute; right:10px; top:10px;" onclick="borrarReg(${i})">🗑️</span>
                     <b class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'} ${r.cliente}</b> <small>${r.fecha}</small><br>
-                    <span class="color-km">🛣️ ${r.km}</span> | <span class="color-time">⏱️ ${r.time}</span> | <span class="color-gas">⛽ ${r.gas.toFixed(2)} | <b class="color-money">💵 $${r.money}</b>
+                    <span class="color-km">🛣️ ${r.km}</span> | <span class="color-time">⏱️ ${r.time}</span> | <span class="color-gas">⛽ ${(Number(r.gas) || 0).toFixed(2)} | <b class="color-money">💵 $${r.money}</b>
                     ${r.extra ? `
                         <div class="card-hist card-extra" style="margin-top:5px; padding:5px; border-left:3px solid #f0f;">
                             <b style="color:#f0f;">⚡ EXTRA:</b> <span class="color-km">🛣️ ${r.extra.km}</span> | <span class="color-time">⏱️ ${r.extra.time}</span>
