@@ -194,8 +194,8 @@
         }
 
         function finalizarYGuardar(){
-            let cons = dTotal * DB.factor;
-            let cExtra = dExtra * DB.factor;
+            let cons = dTotal / DB.factor;
+            let cExtra = dExtra / DB.factor;
             
             DB.registros.unshift({
                 cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
