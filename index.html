@@ -291,23 +291,19 @@
     </div>
 `).join('');
 
-            document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
-                <div class="card-hist">
-                    <span style="position:absolute; right:10px; top:10px;" onclick="borrarReg(${i})">🗑️</span>
-                    <b class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'} ${r.cliente}</b> <small>${r.fecha}</small><br>
-                    <div style="background: #ff00ff; color: white; padding: 5px; margin-top: 5px; border-radius: 5px; display: flex; justify-content: space-between; font-size: 0.8em; font-weight: bold;">
-    <span>⚡ EXTRA:</span>
-    <span>🏠 ${(Number(r.extra?.km) || 0).toFixed(3)}</span>
-    <span>⛽ ${(Number(r.extra?.gas) || 0).toFixed(2)}</span>
-    <span>💵 $${(Number(r.extra?.money) || 0).toFixed(2)}</span>
-    <span>⏱️ ${r.extra?.time || '00:00:00'}</span>
-</div>
-                        <div class="card-hist card-extra" style="margin-top:5px; padding:5px; border-left:3px solid #f0f;">
-                            <b style="color:#f0f;">⚡ EXTRA:</b> <span class="color-km">🛣️ ${r.extra.km}</span> | <span class="color-time">⏱️ ${r.extra.time}</span>
-                        </div>
-                    ` : ''}
+ document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
+            <div class="card-hist">
+                <span style="position:absolute; right:10px; top:10px; cursor:pointer;" onclick="borrarReg(${i})">🗑️</span>
+                <b><span class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'}</span> ${r.cliente}</b>
+                <div style="background: #ff00ff; color: white; padding: 5px; margin-top: 5px; border-radius: 5px; display: flex; justify-content: space-between; font-size: 0.8em; font-weight: bold;">
+                    <span>⚡ EXTRA:</span>
+                    <span>🏠 ${(r.extra && r.extra.km ? Number(r.extra.km) : 0).toFixed(3)}</span>
+                    <span>⛽ ${(r.extra && r.extra.gas ? Number(r.extra.gas) : 0).toFixed(2)}</span>
+                    <span>💵 $${(r.extra && r.extra.money ? Number(r.extra.money) : 0).toFixed(2)}</span>
+                    <span>⏱️ ${r.extra && r.extra.time ? r.extra.time : '00:00:00'}</span>
                 </div>
-            `).join('');
+            </div>
+        ).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
