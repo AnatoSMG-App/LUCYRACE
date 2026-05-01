@@ -157,7 +157,7 @@
                 document.getElementById('ex-time').innerText = formatTime(tExtra);
                 let cEx = dExtra * DB.factor;
                 document.getElementById('ex-gas').innerText = cEx.toFixed(2);
-                document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
+                document.getElementById('ex-money').innerText = (cEx * 1).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
             
             localStorage.setItem('lucy_v61_anato', JSON.stringify(DB));
