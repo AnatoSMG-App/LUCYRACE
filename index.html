@@ -127,7 +127,7 @@
         L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
 
         let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
-            registros: [], factor: 0.05, fuel: 15.0,
+            registros: [], factor: 20.0, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0}, quince: {km:0, time:0, gas:0, money:0}, mes: {km:0, time:0, gas:0, money:0}
         };
 
@@ -155,7 +155,7 @@
                 document.getElementById('extra-float').style.display = 'block';
                 document.getElementById('ex-km').innerText = dExtra.toFixed(3);
                 document.getElementById('ex-time').innerText = formatTime(tExtra);
-                let cEx = dExtra * DB.factor;
+                let cEx = dExtra / DB.factor;
                 document.getElementById('ex-gas').innerText = cEx.toFixed(2);
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
@@ -218,7 +218,6 @@
             actualizarUI();
         }
 
-        // CORRECCIÓN 1: El tiempo del EXTRA ahora suma a los acumulados siempre que esté activo
         function iniciarCronometro(){
             if(cronoMaestro) clearInterval(cronoMaestro);
             cronoMaestro = setInterval(() => {
@@ -229,7 +228,6 @@
                 
                 if(extraActivo) {
                     tExtra++;
-                    // Si no está ya sumando por 'rodando', sumamos al acumulado
                     if(estado !== "rodando") {
                         ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
                     }
@@ -246,8 +244,11 @@
                 if(dist > 0.002){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
-                    let consumoInst = dist * DB.factor;
-                    DB.fuel -= consumoInst;
+                    
+                    /* CIRUGÍA 1: CÁLCULO DE CONSUMO Y RESTA AUTOMÁTICA DEL TANQUE */
+                    let consumoInst = dist / DB.factor; 
+                    DB.fuel -= consumoInst; 
+                    
                     ['siete', 'quince', 'mes'].forEach(per => {
                         DB[per].km += dist;
                         DB[per].gas += consumoInst;
@@ -272,7 +273,6 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
-        // CORRECCIÓN 2: Botones de reset independientes añadidos al mapa de resumen
         function abrirHistorial(){
             const titulos = { 'siete': '7 DÍAS', 'quince': '15 DÍAS', 'mes': '30 DÍAS' };
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
@@ -314,7 +314,6 @@
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
-        // Nueva función de reset para los acumulados
         function resetRango(p) {
             const tit = { 'siete': '7 días', 'quince': '15 días', 'mes': '30 días' };
             if(confirm(`¿Amo, desea poner en CERO el resumen de ${tit[p]}?`)) {
@@ -336,9 +335,16 @@
             }
         }
 
+        /* CIRUGÍA 2: EL CEREBRO DE CALIBRACIÓN - AHORA LUCY APRENDE EL CONSUMO REAL */
         function calibrarYRestar(){
             let val = parseFloat(document.getElementById('input-descuento-litros').value);
-            if(!isNaN(val)) { DB.fuel -= val; actualizarUI(); }
+            if(!isNaN(val) && val > 0) { 
+                // Lucy aprende cuántos KM rinde la moto por cada litro
+                DB.factor = dTotal / val; 
+                
+                DB.fuel -= val; 
+                actualizarUI(); 
+            }
             cerrarModales();
         }
 
