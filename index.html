@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V5.9.8 - FULL RECONEXIÓN</title>
+    <title>LUCY ANATO V6.0 - SISTEMA RECONECTADO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -11,41 +11,32 @@
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
         .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
-        
         @keyframes alert-fuel-red { 0% { background: #f00; } 50% { background: #600; } 100% { background: #f00; } }
         .fuel-alert { animation: alert-fuel-red 0.5s infinite !important; border-color: #fff !important; }
-        
         .val-big { font-size: 1.5em; font-weight: 900; color: #0f0; line-height: 1; }
         .unit-small { font-size: 0.5em; color: #aaa; margin-left: 2px; }
         .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
-        
         .mini-resumen-container { margin-bottom: 15px; display: flex; flex-direction: column; gap: 4px; }
         .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 6px 8px; font-size: 0.7em; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; text-align: center; margin-top: 4px; }
         .btn-reset-bar { float: right; color: #f00; font-weight: 900; cursor: pointer; border: 1px solid #f00; padding: 0 4px; border-radius: 3px; font-size: 0.8em; }
-
         #extra-float { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
         .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
-        
         .side-hud { position: absolute; right: 10px; bottom: 120px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
         .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; }
-        
         .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 94%; display: flex; gap: 10px; z-index: 1000; }
         .btn-main { flex: 1; padding: 18px; border-radius: 15px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; }
         .btn-rodar { background: #0f0; color: #000; }
         .btn-stop { background: #f00; color: #fff; }
-
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
         .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; position: relative; font-size: 0.9em; }
         .btn-close { background: #f00; color: #fff; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; border: none; margin-top: 10px; }
-        
         #whatsapp-box { background: #075E54; padding: 10px; border-radius: 10px; margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
-        #whatsapp-box input { padding: 10px; border-radius: 5px; border: none; background: #fff; color: #000; width: 90%; }
+        #whatsapp-box input { padding: 10px; border-radius: 5px; border: none; background: #fff; color: #000; width: 95%; box-sizing: border-box; }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    
     <div id="extra-float">
         <span style="font-size: 0.8em; font-weight: 900; color: #fff;">🚀 EXTRA: <span id="ex-nombre">CLIENTE</span></span>
         <div class="extra-grid">
@@ -116,8 +107,8 @@
     <div id="modal-gps" class="full-modal">
         <h2>📍 UBICACIÓN CLIENTE</h2>
         <div id="whatsapp-box">
-            <label>Pegar URL de Google Maps:</label>
-            <input type="text" id="url-maps" placeholder="https://maps.app.goo.gl/...">
+            <label>Pegar URL o Coordenadas:</label>
+            <input type="text" id="url-maps" placeholder="Link o eje: 10.191, -67.916">
             <button class="btn-main btn-rodar" onclick="procesarUbicacion()">MARCAR EN MAPA</button>
         </div>
         <button class="btn-close" onclick="cerrarModales()">CANCELAR</button>
@@ -131,7 +122,7 @@
         let layerDestino = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1}).addTo(map);
 
-        let DB = JSON.parse(localStorage.getItem('lucy_v59_repaired')) || {
+        let DB = JSON.parse(localStorage.getItem('lucy_v60_final')) || {
             registros: [], factor: 0.05, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0}, 
             quince: {km:0, time:0, gas:0, money:0}, 
@@ -163,51 +154,79 @@
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
             
-            localStorage.setItem('lucy_v59_repaired', JSON.stringify(DB));
+            localStorage.setItem('lucy_v60_final', JSON.stringify(DB));
         }
 
-        // --- FUNCION CLAVE: CALIBRAR Y RESTAR LITROS ---
         function calibrarYRestar() {
             let litrosARestar = parseFloat(document.getElementById('input-descuento-litros').value);
             if(!isNaN(litrosARestar) && litrosARestar > 0) {
                 DB.fuel -= litrosARestar;
                 if(DB.fuel < 0) DB.fuel = 0;
                 actualizarUI();
-                alert("¡Calibrado! Se restaron " + litrosARestar + "L del tanque.");
+                alert("¡Calibrado! - " + litrosARestar + "L");
                 cerrarModales();
-            } else {
-                alert("Por favor pon un número válido.");
             }
         }
 
-        // --- FUNCION GPS: PROCESAR LINK ---
         function procesarUbicacion() {
-            let url = document.getElementById('url-maps').value;
-            // Intento de extraer coordenadas de links comunes de Maps
-            let regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-            let match = url.match(regex);
+            let input = document.getElementById('url-maps').value;
+            let lat, lon;
+
+            // Detectar si son coordenadas directas (10.123, -67.123)
+            let coordRegex = /(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/;
+            let linkRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+            
+            let match = input.match(coordRegex) || input.match(linkRegex);
             
             if(match) {
-                let lat = parseFloat(match[1]);
-                let lon = parseFloat(match[2]);
+                lat = parseFloat(match[1]);
+                lon = parseFloat(match[2]);
                 layerDestino.clearLayers();
-                L.marker([lat, lon], {icon: L.divIcon({html: '📍', className: 'dest-icon', iconSize: [30,30]})})
-                 .addTo(layerDestino).bindPopup("<b>DESTINO CLIENTE</b>").openPopup();
+                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO").openPopup();
                 map.setView([lat, lon], 16);
                 cerrarModales();
             } else {
-                alert("Pega un link válido que contenga coordenadas (ej: @10.123,-67.123). Si es un link corto, ábrelo en el navegador primero.");
+                alert("Pega coordenadas (ej: 10.191, -67.916) o un link con @");
             }
         }
 
         function iniciarCronometro(){
             if(cronoMaestro) clearInterval(cronoMaestro);
             cronoMaestro = setInterval(() => {
-                if(estado === "rodando") tTotal++;
+                if(estado === "rodando") {
+                    tTotal++;
+                    // ACTUALIZACIÓN EN TIEMPO REAL DE LOS RESÚMENES
+                    ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
+                }
                 if(extraActivo) tExtra++;
                 actualizarUI();
             }, 1000);
         }
+
+        navigator.geolocation.watchPosition(pos => {
+            let p = [pos.coords.latitude, pos.coords.longitude];
+            marker.setLatLng(p);
+            if(estado === "rodando" && ultimaPos){
+                let dist = map.distance(ultimaPos, p) / 1000;
+                if(dist > 0.002){ // 2 metros mínimo para contar
+                    dTotal += dist;
+                    if(extraActivo) dExtra += dist;
+                    
+                    let consumoInst = dist * DB.factor;
+                    DB.fuel -= consumoInst;
+                    
+                    // SUMAR A LOS RESÚMENES EN TIEMPO REAL
+                    ['siete', 'quince', 'mes'].forEach(periodo => {
+                        DB[periodo].km += dist;
+                        DB[periodo].gas += consumoInst;
+                        DB[periodo].money += (consumoInst * 0.5);
+                    });
+                    
+                    actualizarUI();
+                }
+            }
+            ultimaPos = p;
+        }, null, {enableHighAccuracy:true});
 
         function controlRuta(){
             if(estado === "parado"){
@@ -219,65 +238,16 @@
             } else { if(confirm("¿Cerrar ruta?")){ finalizarYGuardar(); } }
         }
 
-        function pausarRuta(){
-            if(estado === "rodando"){
-                estado = "pausado";
-                document.getElementById('btn-pause').innerText = "REANUDAR ▶";
-                let n = prompt("Nombre del Cliente:", clienteActual);
-                if(n) { 
-                    clienteActual = n; 
-                    document.getElementById('ex-nombre').innerText = n.toUpperCase();
-                    if(ultimaPos) L.marker(ultimaPos).addTo(layerPines).bindPopup("<b>"+n+"</b>").openPopup();
-                }
-            } else {
-                estado = "rodando";
-                document.getElementById('btn-pause').innerText = "PAUSA ⏸";
-            }
-        }
-
-        function toggleExtra(){
-            extraActivo = !extraActivo;
-            document.getElementById('btn-extra').style.background = extraActivo ? '#f0f' : '#111';
-            actualizarUI();
-        }
-
-        navigator.geolocation.watchPosition(pos => {
-            let p = [pos.coords.latitude, pos.coords.longitude];
-            marker.setLatLng(p);
-            if(estado === "rodando" && ultimaPos){
-                let dist = map.distance(ultimaPos, p) / 1000;
-                if(dist > 0.001){ // Umbral de 1 metro para evitar saltos GPS
-                    dTotal += dist;
-                    if(extraActivo) dExtra += dist;
-                    DB.fuel -= (dist * DB.factor);
-                    actualizarUI();
-                }
-            }
-            ultimaPos = p;
-        }, null, {enableHighAccuracy:true});
-
         function finalizarYGuardar(){
-            let cTotal = dTotal * DB.factor;
-            let mTotal = cTotal * 0.5;
-            let tiempoParaGuardar = tTotal; 
-
-            ['siete', 'quince', 'mes'].forEach(periodo => {
-                DB[periodo].km = (DB[periodo].km || 0) + dTotal;
-                DB[periodo].time = (DB[periodo].time || 0) + tiempoParaGuardar;
-                DB[periodo].gas = (DB[periodo].gas || 0) + cTotal;
-                DB[periodo].money = (DB[periodo].money || 0) + mTotal;
-            });
-
             DB.registros.unshift({
                 cliente: clienteActual, 
                 fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), 
-                time: formatTime(tiempoParaGuardar), 
-                gas: cTotal.toFixed(3), 
-                money: mTotal.toFixed(2),
+                time: formatTime(tTotal), 
+                gas: (dTotal * DB.factor).toFixed(3), 
+                money: (dTotal * DB.factor * 0.5).toFixed(2),
                 extra: { km: dExtra.toFixed(3), time: formatTime(tExtra) }
             });
-
             resetTodo();
         }
 
@@ -287,7 +257,6 @@
             document.getElementById('btn-main').className="btn-main btn-rodar";
             document.getElementById('btn-pause').style.display="none";
             clienteActual="Sin Nombre";
-            document.getElementById('btn-extra').style.background = '#111';
             actualizarUI();
         }
 
@@ -304,13 +273,11 @@
                     </div>
                 </div>
             `).join('');
-
             document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span style="float:right; color:#f00;" onclick="borrarReg(${i})">🗑️</span>
                     <b style="color:#0f0;">${r.cliente}</b> <small style="color:#888;">${r.fecha}</small><br>
-                    Total: <b>${r.km}km</b> | <b>${r.time}</b> | <b>${r.gas} L</b> | <b>$${r.money}</b><br>
-                    <small style="color:#f0f;">🚀 Extra: ${r.extra.km}km | ${r.extra.time}</small>
+                    Total: <b>${r.km}km</b> | <b>${r.time}</b> | <b>${r.gas} L</b> | <b>$${r.money}</b>
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
@@ -323,15 +290,15 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
-        function resetAcumulado(p){ if(confirm("¿Resetear "+p+"?")){ DB[p]={km:0,time:0,gas:0,money:0}; abrirHistorial(); } }
-        function borrarReg(i){ if(confirm("¿Borrar registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
+        function resetAcumulado(p){ if(confirm("¿Resetear?")){ DB[p]={km:0,time:0,gas:0,money:0}; abrirHistorial(); } }
+        function borrarReg(i){ if(confirm("¿Borrar?")){ DB.registros.splice(i,1); abrirHistorial(); } }
         function abrirFuelModal(){ document.getElementById('input-fuel').value = DB.fuel; document.getElementById('modal-fuel').style.display = 'block'; }
         function guardarFuel(){ DB.fuel = parseFloat(document.getElementById('input-fuel').value); cerrarModales(); actualizarUI(); }
         function abrirCalibrar(){ document.getElementById('current-factor').innerText = DB.factor; document.getElementById('modal-calibrar').style.display = 'block'; }
         function guardarFactor(){ DB.factor = parseFloat(document.getElementById('input-factor').value); cerrarModales(); actualizarUI(); }
         function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
-        function ajusteManualKM(){ let n = prompt("KM:", dTotal.toFixed(3)); if(n) dTotal = parseFloat(n); actualizarUI(); }
+        function toggleExtra(){ extraActivo = !extraActivo; actualizarUI(); }
 
         actualizarUI();
     </script>
