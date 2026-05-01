@@ -143,7 +143,7 @@
             document.getElementById('val-time').innerText = formatTime(tTotal);
             document.getElementById('val-fuel').innerHTML = DB.fuel.toFixed(2) + '<span class="unit-small">L</span>';
             
-            let consTotal = dTotal * DB.factor;
+            let consTotal = dTotal / DB.factor;
             document.getElementById('val-gas-trip').innerText = "⛽ " + consTotal.toFixed(2) + " L";
             document.getElementById('val-money-route').innerText = "💵 $" + (consTotal * 0.5).toFixed(2);
             document.getElementById('val-money-total').innerText = "💵 $" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
