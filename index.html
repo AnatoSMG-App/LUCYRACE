@@ -45,7 +45,7 @@
         
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
         .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; font-size: 0.85em; position: relative; }
-        .card-extra { border-left-color: #f0f; background: #220022; }
+        .card-extra-fix { background: rgba(255, 0, 255, 0.1); border: 1px solid #ff00ff; border-radius: 8px; padding: 8px; margin-top: 10px; }
         .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; margin-top: 5px; }
     </style>
@@ -53,7 +53,6 @@
 <body>
     <div id="map"></div>
 
-    <!-- PANEL EXTRA ⚡ -->
     <div id="extra-float">
         <span style="font-size: 0.8em; font-weight: 900; color: #fff;">⚡ MANIOBRA EXTRA</span>
         <div class="extra-grid">
@@ -95,7 +94,6 @@
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00; color:#000;">PAUSA ⏸</button>
     </div>
 
-    <!-- MODALES -->
     <div id="pantalla-historial" class="full-modal">
         <h2 style="color:#0f0; border-bottom: 2px solid #0f0; text-align: center;">📊 REGISTROS ANATO</h2>
         <div id="contenedor-resumen"></div>
@@ -105,17 +103,16 @@
 
     <div id="modal-gps" class="full-modal">
         <h2 style="text-align: center;">📍 MARCAR DESTINO</h2>
-        <p style="font-size: 0.8em; text-align: center;">Pegue coordenadas o Link de Maps</p>
         <input type="text" id="url-maps" placeholder="10.123, -67.123" style="width:100%; padding:15px; font-size:1.2em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
-        <button class="btn-main btn-rodar" onclick="procesarUbicacion()" style="width: 100%; margin-top: 15px;">UBICAR EN MAPA</button>
-        <button class="btn-main btn-stop" onclick="cerrarModales()" style="width: 100%; margin-top: 10px;">CANCELAR</button>
+        <button class="btn-main btn-rodar" onclick="procesarUbicacion()">UBICAR EN MAPA</button>
+        <button class="btn-main btn-stop" onclick="cerrarModales()">CANCELAR</button>
     </div>
 
     <div id="modal-calibrar" class="full-modal">
         <h2 style="text-align: center;">🔧 CALIBRACIÓN</h2>
         <input type="number" id="input-descuento-litros" value="1.0" step="0.1" style="width:100%; padding:20px; font-size:2em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center; border-radius: 15px;">
-        <button class="btn-main btn-rodar" onclick="calibrarYRestar()" style="width: 100%; margin-top: 15px;">DESCONTAR DEL TANQUE</button>
-        <button class="btn-main btn-stop" onclick="cerrarModales()" style="width: 100%; margin-top: 10px;">CERRAR</button>
+        <button class="btn-main btn-rodar" onclick="calibrarYRestar()">DESCONTAR DEL TANQUE</button>
+        <button class="btn-main btn-stop" onclick="cerrarModales()">CERRAR</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -126,7 +123,6 @@
         let layerDestino = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
 
-        // ICONO FIJO TALLER ANATO
         const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
         L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
 
@@ -152,7 +148,6 @@
             document.getElementById('val-money-route').innerText = "💵 $" + (consTotal * 0.5).toFixed(2);
             document.getElementById('val-money-total').innerText = "💵 $" + (DB.fuel * 0.5).toFixed(2) + " Disp.";
 
-            // ALERTA DE RESERVA (4 LITROS)
             if(DB.fuel <= 4) document.getElementById('panel-fuel').classList.add('fuel-alert');
             else document.getElementById('panel-fuel').classList.remove('fuel-alert');
 
@@ -172,24 +167,16 @@
             if(estado === "rodando") {
                 estado = "pausado";
                 document.getElementById('btn-pause').innerText = "REANUDAR ▶️";
-                equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA? (Nevera, Aire, Moto...)", "Nevera") || "Servicio";
+                equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA?", "Nevera") || "Servicio";
                 clienteActual = prompt("👤 NOMBRE DEL CLIENTE:", "Sr. Juan") || "Sin Nombre";
                 
-                // Icono en el mapa con efecto palpitante
                 let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
                 let markerPos = marker.getLatLng();
                 let customIcon = L.divIcon({
                     html: `<div class="bouncing-icon">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.5); padding:2px;">${clienteActual}</span></div>`,
                     className: 'custom-div-icon', iconSize: [40, 40]
                 });
-                
-                let m = L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerDestino);
-                
-                // Borrado de 3 segundos
-                let t;
-                m.on('mousedown', () => t = setTimeout(() => { if(confirm("¿Borrar etiqueta?")) map.removeLayer(m); }, 3000));
-                m.on('mouseup', () => clearTimeout(t));
-
+                L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerDestino);
             } else {
                 estado = "rodando";
                 document.getElementById('btn-pause').innerText = "PAUSA ⏸";
@@ -208,10 +195,17 @@
 
         function finalizarYGuardar(){
             let cons = dTotal * DB.factor;
+            let cExtra = dExtra * DB.factor;
+            
             DB.registros.unshift({
                 cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), time: formatTime(tTotal), gas: cons.toFixed(2), money: (cons * 0.5).toFixed(2),
-                extra: extraActivo ? { km: dExtra.toFixed(3), time: formatTime(tExtra) } : null
+                extra: { 
+                    km: dExtra.toFixed(3), 
+                    time: formatTime(tExtra), 
+                    gas: cExtra.toFixed(2), 
+                    money: (cExtra * 0.5).toFixed(2) 
+                }
             });
             resetTodo();
         }
@@ -221,7 +215,6 @@
             document.getElementById('btn-main').innerText="A RODAR 🏍️";
             document.getElementById('btn-main').className="btn-main btn-rodar";
             document.getElementById('btn-pause').style.display="none";
-            document.getElementById('btn-pause').innerText = "PAUSA ⏸";
             actualizarUI();
         }
 
@@ -258,15 +251,9 @@
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
-        // AJUSTE MANUAL AL TOCAR NÚMEROS (Para su prueba de 5km)
         function ajusteManual(tipo){
-            if(tipo === 'km'){
-                let n = parseFloat(prompt("🛣️ AJUSTE MANUAL DE KM:", dTotal));
-                if(!isNaN(n)) dTotal = n;
-            } else {
-                let n = parseFloat(prompt("⛽ LITROS EN TANQUE:", DB.fuel));
-                if(!isNaN(n)) DB.fuel = n;
-            }
+            let n = parseFloat(prompt(tipo === 'km' ? "🛣️ AJUSTE MANUAL DE KM:" : "⛽ LITROS EN TANQUE:", tipo === 'km' ? dTotal : DB.fuel));
+            if(!isNaN(n)) { if(tipo === 'km') dTotal = n; else DB.fuel = n; }
             actualizarUI();
         }
 
@@ -278,32 +265,41 @@
         }
 
         function abrirHistorial(){
-           document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'treinta'].map(p => `
-    <div class="barra-resumen" style="position: relative;">
-        <b style="color:#fff;">RESUMEN ${p === 'siete' ? '7' : p === 'quince' ? '15' : '30'} DÍAS:</b>
-        <span onclick="resetRango('${p}')" style="position:absolute; right:10px; top:5px; cursor:pointer;">🗑️</span>
-        <div class="grid-4-jinetes">
-            <div class="color-km">🏠<br>${(Number(DB[p]?.km) || 0).toFixed(3)}</div>
-            <div class="color-time">⏱️<br>${formatTime(DB[p]?.time || 0)}</div>
-            <div class="color-gas">⛽<br>${(Number(DB[p]?.gas) || 0).toFixed(2)}</div>
-            <div class="color-money">💵<br>$${(Number(DB[p]?.money) || 0).toFixed(2)}</div>
-        </div>
-    </div>
-`).join('');
-
- document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
-            <div class="card-hist">
-                <span style="position:absolute; right:10px; top:10px; cursor:pointer;" onclick="borrarReg(${i})">🗑️</span>
-                <b><span class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'}</span> ${r.cliente}</b>
-                <div style="background: #ff00ff; color: white; padding: 5px; margin-top: 5px; border-radius: 5px; display: flex; justify-content: space-between; font-size: 0.8em; font-weight: bold;">
-                    <span>⚡ EXTRA:</span>
-                    <span>🏠 ${(r.extra && r.extra.km ? Number(r.extra.km) : 0).toFixed(3)}</span>
-                    <span>⛽ ${(r.extra && r.extra.gas ? Number(r.extra.gas) : 0).toFixed(2)}</span>
-                    <span>💵 $${(r.extra && r.extra.money ? Number(r.extra.money) : 0).toFixed(2)}</span>
-                    <span>⏱️ ${r.extra && r.extra.time ? r.extra.time : '00:00:00'}</span>
+            document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
+                <div class="barra-resumen">
+                    <b style="color:#fff;">RESUMEN ${p === 'siete' ? '7' : p === 'quince' ? '15' : '30'} DÍAS:</b>
+                    <div class="grid-4-jinetes">
+                        <div class="color-km">🛣️<br>${DB[p].km.toFixed(3)}</div>
+                        <div class="color-time">⏱️<br>${formatTime(DB[p].time)}</div>
+                        <div class="color-gas">⛽<br>${DB[p].gas.toFixed(2)}</div>
+                        <div class="color-money">💵<br>$${DB[p].money.toFixed(2)}</div>
+                    </div>
                 </div>
-            </div>
-       `).join('');
+            `).join('');
+
+            document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
+                <div class="card-hist">
+                    <span style="position:absolute; right:10px; top:10px; cursor:pointer;" onclick="borrarReg(${i})">🗑️</span>
+                    <b class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'} ${r.cliente}</b> <small style="color:#aaa;">${r.fecha}</small>
+                    
+                    <div class="grid-4-jinetes">
+                        <div class="color-km">🛣️<br>${r.km}</div>
+                        <div class="color-time">⏱️<br>${r.time}</div>
+                        <div class="color-gas">⛽<br>${r.gas}</div>
+                        <div class="color-money">💵<br>$${r.money}</div>
+                    </div>
+
+                    <div class="card-extra-fix">
+                        <b style="color:#f0f; font-size:0.8em;">⚡ MODO EXTRA (FIJO)</b>
+                        <div class="grid-4-jinetes" style="font-size:0.9em;">
+                            <div class="color-km">🛣️<br>${r.extra ? r.extra.km : '0.000'}</div>
+                            <div class="color-time">⏱️<br>${r.extra ? r.extra.time : '00:00:00'}</div>
+                            <div class="color-gas">⛽<br>${r.extra ? r.extra.gas : '0.00'}</div>
+                            <div class="color-money">💵<br>$${r.extra ? r.extra.money : '0.00'}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
@@ -313,7 +309,7 @@
             if(match) {
                 let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
                 layerDestino.clearLayers();
-                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO MARCADO").showPopup();
+                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO").showPopup();
                 map.setView([lat, lon], 16);
                 cerrarModales();
             }
@@ -321,12 +317,11 @@
 
         function calibrarYRestar(){
             let val = parseFloat(document.getElementById('input-descuento-litros').value);
-            if(!isNaN(val)) { DB.fuel -= val; alert("Se descontaron " + val + "L del tanque."); }
+            if(!isNaN(val)) { DB.fuel -= val; actualizarUI(); }
             cerrarModales();
-            actualizarUI();
         }
 
-        function borrarReg(i){ if(confirm("¿Borrar registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
+        function borrarReg(i){ if(confirm("¿Amo, borrar este registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function toggleExtra(){ extraActivo = !extraActivo; actualizarUI(); }
         function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
