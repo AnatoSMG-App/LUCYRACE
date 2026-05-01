@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V6.2 - CLOUD SYNC</title>
+    <title>LUCY ANATO V6.2.1 - HYBRID FIX</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -32,7 +32,7 @@
         .btn-stop { background: #f00; color: #fff; }
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; padding: 15px; overflow-y: auto; box-sizing: border-box; }
         .card-hist { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0f0; font-size: 0.85em; position: relative; }
-        .card-extra-fix { background: rgba(255, 0, 255, 0.1); border: 1px solid #ff00ff; border-radius: 8px; padding: 8px; margin-top: 10px; }
+        .card-extra-fix { background: rgba(255, 0, 255, 0.1); border: 1px solid #ff00ff; border-radius: 8px; padding: 8px; margin-top: 10px; text-align: center; }
         .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; position: relative; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; margin-top: 5px; }
     </style>
@@ -81,6 +81,7 @@
         <button id="btn-pause" class="btn-main" onclick="pausarRuta()" style="display:none; background:#ffae00; color:#000;">PAUSA ⏸</button>
     </div>
 
+    <!-- Modales -->
     <div id="pantalla-historial" class="full-modal">
         <h2 style="color:#0f0; border-bottom: 2px solid #0f0; text-align: center;">📊 REGISTROS ANATO</h2>
         <div id="contenedor-resumen"></div>
@@ -90,15 +91,13 @@
 
     <div id="modal-gps" class="full-modal">
         <h2 style="text-align: center;">📍 MARCAR DESTINO</h2>
-        <p style="text-align:center; font-size:0.8em;">Pega coordenadas o Link de WhatsApp:</p>
-        <input type="text" id="url-maps" placeholder="https://maps.app.goo.gl/..." style="width:100%; padding:15px; font-size:1.1em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
+        <input type="text" id="url-maps" placeholder="Coordenadas o Link Maps..." style="width:100%; padding:15px; font-size:1.1em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
         <button class="btn-main btn-rodar" onclick="procesarUbicacion()">UBICAR EN MAPA</button>
         <button class="btn-main btn-stop" onclick="cerrarModales()">CANCELAR</button>
     </div>
 
     <div id="modal-calibrar" class="full-modal">
         <h2 style="text-align: center;">🔧 CALIBRACIÓN</h2>
-        <p style="text-align:center; font-size:0.8em; color:#aaa;">¿Cuántos litros gastaste para recorrer los KM actuales?</p>
         <input type="number" id="input-descuento-litros" value="1.0" step="0.1" style="width:100%; padding:20px; font-size:2em; background:#111; color:#0f0; border:2px solid #0f0; text-align:center; border-radius: 15px;">
         <button class="btn-main btn-rodar" onclick="calibrarYRestar()">CALIBRAR Y DESCONTAR</button>
         <button class="btn-main btn-stop" onclick="cerrarModales()">CERRAR</button>
@@ -110,25 +109,21 @@
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         
         let layerDestino = L.layerGroup().addTo(map);
-        let layerEtiquetasPijas = L.layerGroup().addTo(map); // Capa para que las etiquetas no se borren
+        let layerEtiquetasPijas = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
 
         const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
         L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
 
-        // MEMORIA PERMANENTE (Carga de datos)
-        let DB = JSON.parse(localStorage.getItem('lucy_v62_anato')) || {
-            registros: [], factor: 20.0, fuel: 15.0,
-            etiquetasMapa: [], // Nueva sección para guardar etiquetas en el mapa
+        let DB = JSON.parse(localStorage.getItem('lucy_v62_hybrid')) || {
+            registros: [], factor: 20.0, fuel: 15.0, etiquetasMapa: [],
             siete: {km:0, time:0, gas:0, money:0}, quince: {km:0, time:0, gas:0, money:0}, mes: {km:0, time:0, gas:0, money:0}
         };
 
         let estado = "parado", extraActivo = false, clienteActual = "Sin Cliente", equipoActual = "Servicio";
         let dTotal = 0, dExtra = 0, tTotal = 0, tExtra = 0, cronoMaestro, ultimaPos = null;
 
-        const iconosEquipo = {
-            "nevera": "❄️", "aire": "🌬️", "moto": "🏍️", "lavadora": "🌀", "casa": "🏠", "taller": "🔧"
-        };
+        const iconosEquipo = { "nevera": "❄️", "aire": "🌬️", "moto": "🏍️", "lavadora": "🌀", "casa": "🏠", "taller": "🔧" };
 
         function actualizarUI(){
             document.getElementById('val-km').innerHTML = dTotal.toFixed(3) + '<span class="unit-small">KM</span>';
@@ -152,16 +147,14 @@
                 document.getElementById('ex-money').innerText = (cEx * 0.5).toFixed(2);
             } else { document.getElementById('extra-float').style.display = 'none'; }
             
-            // GUARDADO AUTOMÁTICO CADA VEZ QUE CAMBIA ALGO
-            localStorage.setItem('lucy_v62_anato', JSON.stringify(DB));
+            localStorage.setItem('lucy_v62_hybrid', JSON.stringify(DB));
         }
 
-        // CARGAR ETIQUETAS GUARDADAS AL INICIAR
         function cargarEtiquetasMapa() {
             DB.etiquetasMapa.forEach(et => {
                 let iconEmoji = iconosEquipo[et.equipo.toLowerCase()] || "📍";
                 let customIcon = L.divIcon({
-                    html: `<div class="bouncing-icon" onclick="alert('CLIENTE: ${et.cliente}\\nKM: ${et.km}\\nGAS: ${et.gas}L\\nFECHA: ${et.fecha}')">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.6); padding:2px; border-radius:3px;">${et.cliente}</span></div>`,
+                    html: `<div class="bouncing-icon">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.6); padding:2px; border-radius:3px;">${et.cliente}</span></div>`,
                     className: 'custom-div-icon', iconSize: [40, 40]
                 });
                 L.marker([et.lat, et.lng], {icon: customIcon}).addTo(layerEtiquetasPijas);
@@ -174,24 +167,13 @@
                 document.getElementById('btn-pause').innerText = "REANUDAR ▶️";
                 equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA?", "Nevera") || "Servicio";
                 clienteActual = prompt("👤 NOMBRE DEL CLIENTE:", "Cliente") || "Sin Nombre";
-                
                 let markerPos = marker.getLatLng();
-                let infoEtiqueta = {
-                    lat: markerPos.lat, lng: markerPos.lng,
-                    cliente: clienteActual, equipo: equipoActual,
-                    km: dTotal.toFixed(2), gas: (dTotal/DB.factor).toFixed(2),
-                    fecha: new Date().toLocaleDateString()
-                };
-                
-                DB.etiquetasMapa.push(infoEtiqueta);
-                actualizarUI();
-                
-                let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
-                let customIcon = L.divIcon({
-                    html: `<div class="bouncing-icon" onclick="alert('CLIENTE: ${clienteActual}\\nKM: ${dTotal.toFixed(2)}\\nLITROS: ${(dTotal/DB.factor).toFixed(2)}')">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.5); padding:2px;">${clienteActual}</span></div>`,
-                    className: 'custom-div-icon', iconSize: [40, 40]
+                DB.etiquetasMapa.push({
+                    lat: markerPos.lat, lng: markerPos.lng, cliente: clienteActual, equipo: equipoActual,
+                    km: dTotal.toFixed(2), gas: (dTotal/DB.factor).toFixed(2), fecha: new Date().toLocaleDateString()
                 });
-                L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerEtiquetasPijas);
+                cargarEtiquetasMapa();
+                actualizarUI();
             } else {
                 estado = "rodando";
                 document.getElementById('btn-pause').innerText = "PAUSA ⏸";
@@ -205,7 +187,7 @@
                 document.getElementById('btn-main').className = "btn-main btn-stop";
                 document.getElementById('btn-pause').style.display = "block";
                 iniciarCronometro();
-            } else { if(confirm("¿Cerrar ruta y guardar en registro?")){ finalizarYGuardar(); } }
+            } else { if(confirm("¿Cerrar ruta y guardar?")){ finalizarYGuardar(); } }
         }
 
         function finalizarYGuardar(){
@@ -239,20 +221,16 @@
             }, 1000);
         }
 
-        // MEJORA 1: EL GPS AHORA RESTA DEL TANQUE AUTOMÁTICAMENTE
         navigator.geolocation.watchPosition(pos => {
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
-                if(dist > 0.001){ // Filtro de movimiento real
+                if(dist > 0.001){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
-                    
-                    // RESTA AUTOMÁTICA DEL TANQUE
                     let consumoInst = dist / DB.factor; 
                     DB.fuel -= consumoInst; 
-                    
                     ['siete', 'quince', 'mes'].forEach(per => {
                         DB[per].km += dist;
                         DB[per].gas += consumoInst;
@@ -263,12 +241,6 @@
             }
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
-
-        function ajusteManual(tipo){
-            let n = parseFloat(prompt(tipo === 'km' ? "🛣️ AJUSTE MANUAL DE KM:" : "⛽ LITROS EN TANQUE:", tipo === 'km' ? dTotal : DB.fuel));
-            if(!isNaN(n)) { if(tipo === 'km') dTotal = n; else DB.fuel = n; }
-            actualizarUI();
-        }
 
         function formatTime(s){
             let h = Math.floor(s / 3600);
@@ -281,10 +253,10 @@
             const titulos = { 'siete': '7 DÍAS', 'quince': '15 DÍAS', 'mes': '30 DÍAS' };
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
                 <div class="barra-resumen">
-                    <span onclick="resetRango('${p}')" style="position:absolute; right:10px; top:8px; color:red; cursor:pointer; font-weight:bold; font-size:1.2em;">❌</span>
-                    <b style="color:#fff;">RESUMEN ${titulos[p]}:</b>
+                    <span onclick="resetRango('${p}')" style="position:absolute; right:10px; top:8px; color:red; cursor:pointer;">❌</span>
+                    <b>RESUMEN ${titulos[p]}:</b>
                     <div class="grid-4-jinetes">
-                        <div class="color-km">🛣️<br>${DB[p].km.toFixed(3)}</div>
+                        <div class="color-km">🛣️<br>${DB[p].km.toFixed(2)}</div>
                         <div class="color-time">⏱️<br>${formatTime(DB[p].time)}</div>
                         <div class="color-gas">⛽<br>${DB[p].gas.toFixed(2)}</div>
                         <div class="color-money">💵<br>$${DB[p].money.toFixed(2)}</div>
@@ -302,55 +274,24 @@
                         <div class="color-gas">⛽<br>${r.gas}</div>
                         <div class="color-money">💵<br>$${r.money}</div>
                     </div>
+                    ${r.extra && parseFloat(r.extra.km) > 0 ? `
+                        <div class="card-extra-fix">
+                            <span style="font-size:0.8em; color:#f0f;">⚡ EXTRA: ${r.extra.km}km | ${r.extra.time} | $${r.extra.money}</span>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
         function resetRango(p) {
-            if(confirm(`¿Amo, desea poner en CERO el resumen?`)) {
-                DB[p] = {km:0, time:0, gas:0, money:0};
-                actualizarUI();
-                abrirHistorial();
-            }
+            if(confirm(`¿Resetear resumen de ${p}?`)) { DB[p] = {km:0, time:0, gas:0, money:0}; actualizarUI(); abrirHistorial(); }
         }
 
-        // MEJORA 2: PROCESADOR DE LINKS DE WHATSAPP / COORDENADAS
-        async function procesarUbicacion() {
-            let input = document.getElementById('url-maps').value.trim();
-            if(!input) return;
-
-            // Si son coordenadas directas
-            let coords = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
-            if(coords) {
-                ubicarPunto(parseFloat(coords[1]), parseFloat(coords[2]));
-            } 
-            // Si es un link de WhatsApp/Google
-            else if(input.includes("maps")) {
-                alert("Lucy está analizando el enlace del cliente...");
-                // Simulación de resolución de link (En una web real se usa una API de redirección)
-                // Para efectos de esta versión, buscaremos coordenadas dentro del texto si las hay
-                let urlCoords = input.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-                if(urlCoords) {
-                    ubicarPunto(parseFloat(urlCoords[1]), parseFloat(urlCoords[2]));
-                } else {
-                    alert("Link recibido. Para máxima precisión, intenta copiar 'Compartir ubicación en tiempo real' o las coordenadas del pin.");
-                }
-            }
-        }
-
-        function ubicarPunto(lat, lon) {
-            layerDestino.clearLayers();
-            L.marker([lat, lon], {bounceOnAdd: true}).addTo(layerDestino).bindPopup("DESTINO CLIENTE").openPopup();
-            map.setView([lat, lon], 16);
-            
-            // CALCULAR DISTANCIA ESTIMADA
-            if(ultimaPos) {
-                let dEst = map.distance(ultimaPos, [lat, lon]) / 1000;
-                let gEst = dEst / DB.factor;
-                alert(`DISTANCIA ESTIMADA: ${dEst.toFixed(2)} km\nGASOLINA NECESARIA: ${gEst.toFixed(2)} L\nCOSTO: $${(gEst*0.5).toFixed(2)}`);
-            }
-            cerrarModales();
+        function ajusteManual(tipo){
+            let n = parseFloat(prompt(tipo === 'km' ? "🛣️ KM ACTUAL:" : "⛽ LITROS:", tipo === 'km' ? dTotal : DB.fuel));
+            if(!isNaN(n)) { if(tipo === 'km') dTotal = n; else DB.fuel = n; }
+            actualizarUI();
         }
 
         function calibrarYRestar(){
@@ -359,18 +300,31 @@
                 DB.factor = dTotal / val; 
                 DB.fuel -= val; 
                 actualizarUI(); 
-                alert("¡Calibrado! Ahora Lucy sabe mejor cuánto consume tu moto.");
-            } else { alert("Recorre al menos 1KM para poder calibrar."); }
+                alert("¡Calibrado!");
+            }
             cerrarModales();
         }
 
-        function borrarReg(i){ if(confirm("¿Borrar registro?")){ DB.registros.splice(i,1); actualizarUI(); abrirHistorial(); } }
+        async function procesarUbicacion() {
+            let input = document.getElementById('url-maps').value.trim();
+            let coords = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            if(coords) ubicarPunto(parseFloat(coords[1]), parseFloat(coords[2]));
+            else alert("Pega coordenadas (Ej: 10.123, -67.456)");
+        }
+
+        function ubicarPunto(lat, lon) {
+            layerDestino.clearLayers();
+            L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO").openPopup();
+            map.setView([lat, lon], 16);
+            cerrarModales();
+        }
+
+        function borrarReg(i){ if(confirm("¿Borrar?")){ DB.registros.splice(i,1); actualizarUI(); abrirHistorial(); } }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function toggleExtra(){ extraActivo = !extraActivo; actualizarUI(); }
         function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
         function abrirCalibrar(){ document.getElementById('modal-calibrar').style.display = 'block'; }
 
-        // INICIO
         cargarEtiquetasMapa();
         actualizarUI();
     </script>
