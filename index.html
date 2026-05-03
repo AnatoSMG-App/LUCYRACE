@@ -300,7 +300,7 @@
         // --- MOTOR GPS RECALIBRADO V6.4 --- 300
         navigator.geolocation.watchPosition(pos => { // linea 301 aquiiiiiiiiiiii 
             // FILTRO DE PRECISIÓN: Si el error es mayor a 20m, ignoramos la señal (Filtro de Ruido)
-            if (pos.coords.accuracy > 30) return;
+            if (pos.coords.accuracy > 25) return;
 
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
@@ -308,7 +308,7 @@
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
                 // SENSIBILIDAD: Solo suma si se movió al menos 1 metro (0.001 km)
-                if(dist >= 0.00010){
+                if(dist >= 0.005){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
