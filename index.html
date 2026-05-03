@@ -414,51 +414,61 @@
         // ============================================================
 // BLOQUE: PROCESADOR DE DESTINOS (GUÍA VISUAL DE RUTA)
 // ============================================================
-function procesarUbicacion() {
-    let input = document.getElementById('url-maps').value;
+function procesarUbicacion() {  // procesar ubicacion aquiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii 417
+    // 1. Verificamos que el ID coincida con su HTML
+    let campo = document.getElementById('url-maps');
+    if(!campo) { alert("Error: No encontré el ID 'url-maps'"); return; }
     
-    // FILTRO INTELIGENTE: Busca cualquier par de números decimales en el texto
-    let match = input.match(/(-?\d+\.\d+)\s*[,\s]\s*(-?\d+\.\d+)/);
+    let input = campo.value;
+    
+    // FILTRO MAESTRO: Busca dos grupos de números con puntos decimales
+    // Ahora es más flexible con espacios, comas o letras en el medio
+    let match = input.match(/(-?\d+\.\d+).*?(-?\d+\.\d+)/);
     
     if(match) {
-        let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
+        let lat = parseFloat(match[1]);
+        let lon = parseFloat(match[2]);
+        
         layerDestino.clearLayers();
         
         let pDestino = [lat, lon];
         let pActual = marker.getLatLng();
         
-        // CÁLCULOS PARA LA SÚPER ETIQUETA (Basados en línea recta teórica)
+        // CÁLCULOS (Teoría de línea recta para el presupuesto)
         let distIda = map.distance(pActual, pDestino) / 1000;
         let distTotal = distIda * 2;
         let gasEstimada = distTotal * DB.factor;
-        let costoEstimado = gasEstimada * 0.5;
+        // Supongamos que el litro está a $0.50 (ajústelo si es necesario)
+        let precioLitro = 0.5; 
+        let costoEstimado = gasEstimada * precioLitro;
 
-        // 1. Marcador con la SÚPER ETIQUETA (Lo que usted pidió: Ida, Vuelta, Total)
+        // 1. MARCADOR CON SÚPER ETIQUETA DETALLADA
         let m = L.marker(pDestino).addTo(layerDestino);
         let popCont = `
-            <div class="map-label">
-                <b style="color:#00e5ff;">📍 DESTINO DETECTADO</b><br><hr>
-                路 <b>Ida:</b> ${distIda.toFixed(2)} km ($${(distIda * DB.factor * 0.5).toFixed(2)})<br>
-                🔄 <b>Vuelta:</b> ${distIda.toFixed(2)} km ($${(distIda * DB.factor * 0.5).toFixed(2)})<br>
-                🚩 <b>TOTAL:</b> ${distTotal.toFixed(2)} km<br>
-                ⛽ <b>GAS:</b> ${gasEstimada.toFixed(2)} L<br>
-                💵 <b>COSTO TOTAL:</b> $${costoEstimado.toFixed(2)}
+            <div style="color:#fff; background:#222; padding:10px; border-radius:8px; border:1px solid #00e5ff; font-family: sans-serif;">
+                <b style="color:#00e5ff; font-size:14px;">📍 PRESUPUESTO DE RUTA</b><br><hr style="border:0.5px solid #444;">
+                🔵 <b>Ida:</b> ${distIda.toFixed(2)} km ($${(distIda * DB.factor * precioLitro).toFixed(2)})<br>
+                🟢 <b>Vuelta:</b> ${distIda.toFixed(2)} km ($${(distIda * DB.factor * precioLitro).toFixed(2)})<br>
+                🏁 <b>TOTAL:</b> ${distTotal.toFixed(2)} km<br>
+                ⛽ <b>GASOLINA:</b> ${gasEstimada.toFixed(2)} L<br>
+                💵 <b>COSTO ESTIMADO:</b> <span style="color:#00ff00; font-size:15px;">$${costoEstimado.toFixed(2)}</span>
             </div>`;
+        
         m.bindPopup(popCont).openPopup();
         
-        // 2. LÍNEA AZUL DE GUÍA (Estilo WhatsApp/Maps)
+        // 2. LÍNEA AZUL DE GUÍA (La ruta teórica)
         let rutaGuia = L.polyline([pActual, pDestino], {
             color: '#00e5ff',
-            weight: 5,
-            opacity: 0.6,
-            dashArray: '10, 15',
-            lineJoin: 'round'
+            weight: 4,
+            opacity: 0.7,
+            dashArray: '8, 12'
         }).addTo(layerDestino);
 
         map.fitBounds(rutaGuia.getBounds(), {padding: [50, 50]});
-        cerrarModales();
+        cerrarModales(); 
+        
     } else {
-        alert("❌ Error: No encontré coordenadas. Asegúrese de que el mensaje tenga latitud y longitud.");
+        alert("❌ Error: Pegue las coordenadas (ej: 10.23, -67.94) o el mensaje completo de WhatsApp.");
     }
 }
         function calibrarYRestar(){
