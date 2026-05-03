@@ -297,21 +297,29 @@
             }, 1000);
         }
 
+        // --- MOTOR GPS REFORZADO POR WATSON ---
         navigator.geolocation.watchPosition(pos => {
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
+                // Sensibilidad extrema: 50 centímetros (0.0005 km)
                 if(dist > 0.0005){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
                     DB.fuel -= consumoInst; 
                     actualizarUI();
+                    ultimaPos = p; // Solo actualiza si hubo movimiento real
                 }
+            } else {
+                ultimaPos = p;
             }
-            ultimaPos = p;
-        }, null, {enableHighAccuracy:true});
+        }, null, {
+            enableHighAccuracy: true,
+            maximumAge: 0,        // No usar datos viejos
+            timeout: 5000         // Reintentar rápido si hay nubes
+        });
 
         function ajusteManual(tipo){
             let promptMsg = "";
