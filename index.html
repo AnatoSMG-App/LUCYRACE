@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V6.3 - MULTISERVICIOS ANATO SMG</title>
+    <title>LUCY ANATO V6.4 - MULTISERVICIOS ANATO SMG</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -29,7 +29,7 @@
         .fuel-alert { animation: alert-red 0.6s infinite !important; border-color: #fff !important; }
         
         @keyframes bounce-icon { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.2); } }
-        .bouncing-icon { animation: bounce-icon 1s infinite; font-size: 30px; text-align: center; }
+        .bouncing-icon { animation: bounce-icon 1s infinite; font-size: 30px; text-align: center; cursor: pointer; }
 
         /* PANEL EXTRA RAYO */
         #extra-float { position: absolute; top: 130px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
@@ -49,7 +49,6 @@
         .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; position: relative; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; margin-top: 5px; }
 
-        /* Estilo para la etiqueta del mapa mejorada */
         .map-label { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 10px; padding: 8px; color: #fff; font-size: 12px; min-width: 120px; box-shadow: 0 0 10px #0f0; }
     </style>
 </head>
@@ -168,7 +167,6 @@
             localStorage.setItem('lucy_v61_anato', JSON.stringify(DB));
         }
 
-        // ▼▼▼ COMIENZA: ETIQUETAS INTERACTIVAS CON EDICIÓN/BORRADO ▼▼▼
         function pausarRuta() {
             if(estado === "rodando") {
                 estado = "pausado";
@@ -178,15 +176,14 @@
                 
                 let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
                 let markerPos = marker.getLatLng();
-                
                 crearMarcadorCliente(markerPos.lat, markerPos.lng, clienteActual, equipoActual, iconEmoji, dTotal);
-
             } else {
                 estado = "rodando";
                 document.getElementById('btn-pause').innerText = "PAUSA ⏸";
             }
         }
 
+        // ▼▼▼ MEJORA: ETIQUETAS INTERACTIVAS (CLICK Y PRESIÓN LARGA) ▼▼▼
         function crearMarcadorCliente(lat, lng, nombre, equipo, emoji, kmIda) {
             let kmVuelta = kmIda;
             let kmTotal = kmIda + kmVuelta;
@@ -200,7 +197,6 @@
 
             let m = L.marker([lat, lng], {icon: customIcon}).addTo(layerDestino);
 
-            // Contenido desplegable (Solo al tocar)
             let popCont = `
                 <div class="map-label">
                     <b style="color:#0f0;">${emoji} ${nombre}</b><br>
@@ -213,7 +209,6 @@
                 </div>`;
             m.bindPopup(popCont);
 
-            // SISTEMA DE PRESIÓN LARGA (3 SEG) PARA ELIMINAR O EDITAR
             let timer;
             m.on('mousedown touchstart', (e) => {
                 timer = setTimeout(() => {
@@ -224,11 +219,10 @@
                     } else if(op === "2") {
                         if(confirm("¿Borrar este marcador del mapa?")) m.remove();
                     }
-                }, 3000);
+                }, 3000); // 3 SEGUNDOS DE PRESIÓN LARGA
             });
             m.on('mouseup mouseleave touchend', () => clearTimeout(timer));
         }
-        // ▲▲▲ FINALIZA: ETIQUETAS INTERACTIVAS ▲▲▲
 
         function controlRuta(){
             if(estado === "parado"){
@@ -240,23 +234,21 @@
             } else { if(confirm("¿Cerrar ruta y guardar en registro?")){ finalizarYGuardar(); } }
         }
 
-        // ▼▼▼ COMIENZA: REPARACIÓN DE SUMAS TOTALES (EXTRA + CLIENTE) ▼▼▼
+        // ▼▼▼ REPARACIÓN: SUMA UNIFICADA SIN MAQUILLAJE EN PANEL FRONTAL ▼▼▼
         function finalizarYGuardar(){
-            // CALCULAMOS LOS GRAN TOTALES PARA QUE NADA SE PIERDA
-            let granTotalKM = dTotal; // dTotal ya incluye dExtra si se usó ajusteManual('extra-km')
-            let granTotalGas = dTotal * DB.factor;
-            let granTotalMoney = granTotalGas * 0.5;
-            let granTotalTime = tTotal + (extraActivo ? 0 : tExtra); // Evitar doble suma si ya rodaba
+            // CALCULAMOS TOTALES REALES (CLIENTE + EXTRA)
+            let totalKmReal = dTotal + dExtra; 
+            let totalGasReal = totalKmReal * DB.factor;
+            let totalMoneyReal = totalGasReal * 0.5;
 
-            // Inyectamos la suma unificada a los históricos de 7, 15 y 30 días
+            // ACTUALIZAR REGISTROS HISTÓRICOS
             ['siete', 'quince', 'mes'].forEach(per => {
-                DB[per].km += granTotalKM;
-                DB[per].gas += granTotalGas;
-                DB[per].money += granTotalMoney;
-                // El tiempo de rodaje ya se suma segundo a segundo, pero aseguramos el del extra
+                DB[per].km += totalKmReal;
+                DB[per].gas += totalGasReal;
+                DB[per].money += totalMoneyReal;
             });
 
-            // Guardamos el registro detallado
+            // GUARDAR FICHA DE LA RUTA
             DB.registros.unshift({
                 cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), 
@@ -272,7 +264,6 @@
             });
             resetTodo();
         }
-        // ▲▲▲ FINALIZA: REPARACIÓN DE SUMAS ▲▲▲
 
         function resetTodo(){
             clearInterval(cronoMaestro); dTotal=0; tTotal=0; dExtra=0; tExtra=0; estado="parado"; extraActivo=false;
@@ -315,7 +306,7 @@
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
-        // ▼▼▼ COMIENZA: AJUSTE MANUAL CON RESTA DE TANQUE AUTOMÁTICA ▼▼▼
+        // ▼▼▼ REPARACIÓN: AJUSTE MANUAL SIN ENSUCIAR EL PANEL FRONTAL ▼▼▼
         function ajusteManual(tipo){
             let promptMsg = "";
             let defaultVal = 0;
@@ -339,8 +330,8 @@
                     let diferenciaEx = n - dExtra;
                     if(diferenciaEx > 0) {
                         let consumoEx = diferenciaEx * DB.factor;
-                        DB.fuel -= consumoEx; // AHORA SÍ DESCUENTA DEL TANQUE AUTOMÁTICAMENTE
-                        dTotal += diferenciaEx; 
+                        DB.fuel -= consumoEx; // DESCUENTO INMEDIATO DEL TANQUE
+                        // NO SUMAMOS A dTotal AQUÍ PARA EVITAR EL MAQUILLAJE FRONTAL
                     }
                     dExtra = n;
                 }
@@ -348,7 +339,6 @@
             }
             actualizarUI();
         }
-        // ▲▲▲ FINALIZA: AJUSTE MANUAL ▲▲▲
 
         function formatTime(s){
             let h = Math.floor(s / 3600);
@@ -398,7 +388,7 @@
         }
 
         function resetRango(p) {
-            if(confirm(`¿Amo, desea poner en CERO el resumen?`)) {
+            if(confirm(`¿Desea poner en CERO el resumen?`)) {
                 DB[p] = {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()};
                 actualizarUI();
                 abrirHistorial();
@@ -423,7 +413,7 @@
             cerrarModales();
         }
 
-        function borrarReg(i){ if(confirm("¿Amo, borrar este registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
+        function borrarReg(i){ if(confirm("¿Borrar este registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function toggleExtra(){ extraActivo = !extraActivo; actualizarUI(); }
         function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
