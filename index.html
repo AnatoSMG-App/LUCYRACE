@@ -9,10 +9,12 @@
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
+        /* PANELES SUPERIORES */
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
         .panel-data { background: rgba(0,0,0,0.85); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.3); backdrop-filter: blur(5px); }
         
+        /* COLORES SENSORES */
         .color-km { color: #ffeb3b !important; } 
         .color-gas { color: #ff9800 !important; } 
         .color-time { color: #00e5ff !important; } 
@@ -22,12 +24,14 @@
         .unit-small { font-size: 0.5em; color: #aaa; margin-left: 2px; }
         .txt-label { font-size: 0.6em; color: #aaa; text-transform: uppercase; font-weight: bold; }
         
+        /* ALERTAS Y ANIMACIONES */
         @keyframes alert-red { 0% { background: #f00; } 50% { background: #300; } 100% { background: #f00; } }
         .fuel-alert { animation: alert-red 0.6s infinite !important; border-color: #fff !important; }
         
         @keyframes bounce-icon { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.2); } }
         .bouncing-icon { animation: bounce-icon 1s infinite; font-size: 30px; text-align: center; cursor: pointer; }
 
+        /* PANEL EXTRA RAYO */
         #extra-float { position: absolute; top: 130px; left: 50%; transform: translateX(-50%); background: rgba(112, 0, 112, 0.95); border: 2px solid #f0f; padding: 8px; border-radius: 12px; display: none; z-index: 3000; width: 90%; text-align: center; box-shadow: 0 0 15px #f0f; }
         .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
         
@@ -115,9 +119,10 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- CONFIGURACIÓN DE MAPA GOOGLE HÍBRIDO ---
+        // --- CONFIGURACIÓN DE MAPA GOOGLE HÍBRIDO (TECHOS + CALLES) ---
         let map = L.map('map', {zoomControl: false}).setView([10.168867, -67.926840], 18);
         
+        // Capa Híbrida de Google Maps
         L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains:['mt0','mt1','mt2','mt3']
@@ -126,6 +131,7 @@
         let layerDestino = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
 
+        // Marcador Sede Oficial ANATO
         const iconAnato = L.divIcon({ 
             html: '<div style="font-size:25px; filter: drop-shadow(0 0 5px #0f0);">🏠</div>', 
             className: 'anato-home', 
@@ -133,7 +139,7 @@
         });
         L.marker([10.168867, -67.926840], {icon: iconAnato}).addTo(map).bindPopup("<b style='color:#000;'>Sede Multiservicios ANATO S.M.G</b>");
 
-        // --- BASE DE DATOS ---
+        // --- LÓGICA DE BASE DE DATOS (INTACTA) ---
         let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
             registros: [], factor: 0.05, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}, 
@@ -177,7 +183,7 @@
             if(estado === "rodando") {
                 estado = "pausado";
                 document.getElementById('btn-pause').innerText = "REANUDAR ▶️";
-                equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA?", "Nevera") || "Servicio";
+                equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA? (Nevera, Aire, Moto, etc)", "Nevera") || "Servicio";
                 clienteActual = prompt("👤 NOMBRE DEL CLIENTE:", "Sr. Juan") || "Sin Nombre";
                 
                 let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
@@ -217,12 +223,12 @@
             let timer;
             m.on('mousedown touchstart', (e) => {
                 timer = setTimeout(() => {
-                    let op = prompt("⚙️ GESTIÓN:\n1. Editar\n2. Eliminar");
+                    let op = prompt("⚙️ GESTIÓN DE ETIQUETA:\n1. Editar Nombre\n2. Eliminar Marcador\nEscribe el número:");
                     if(op === "1") {
                         let nuevo = prompt("Nuevo nombre:", nombre);
                         if(nuevo) { m.remove(); crearMarcadorCliente(lat, lng, nuevo, equipo, emoji, kmIda); }
                     } else if(op === "2") {
-                        if(confirm("¿Borrar?")) m.remove();
+                        if(confirm("¿Borrar este marcador del mapa?")) m.remove();
                     }
                 }, 3000); 
             });
@@ -236,7 +242,7 @@
                 document.getElementById('btn-main').className = "btn-main btn-stop";
                 document.getElementById('btn-pause').style.display = "block";
                 iniciarCronometro();
-            } else { if(confirm("¿Cerrar ruta?")){ finalizarYGuardar(); } }
+            } else { if(confirm("¿Cerrar ruta y guardar en registro?")){ finalizarYGuardar(); } }
         }
 
         function finalizarYGuardar(){
@@ -291,54 +297,47 @@
             }, 1000);
         }
 
-        // --- MOTOR GPS REFORZADO POR ANATO (CALIBRACIÓN DE PRECISIÓN) ---
         navigator.geolocation.watchPosition(pos => {
             let p = [pos.coords.latitude, pos.coords.longitude];
-            let precision = pos.coords.accuracy;
-
             marker.setLatLng(p);
-
-            // FILTRO DE PRECISIÓN: Si el error es mayor a 20m, ignoramos el punto
-            if (precision > 20) return; 
-
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
-                
-                // SENSIBILIDAD EQUILIBRADA: 1 metro (0.001 km)
-                if(dist > 0.001){
+                if(dist > 0.0005){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
                     DB.fuel -= consumoInst; 
                     actualizarUI();
-                    ultimaPos = p;
                 }
-            } else {
-                ultimaPos = p;
             }
-        }, null, {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 10000
-        });
+            ultimaPos = p;
+        }, null, {enableHighAccuracy:true});
 
         function ajusteManual(tipo){
             let promptMsg = "";
             let defaultVal = 0;
-            if(tipo === 'km') { promptMsg = "🛣️ KM ACTUAL:"; defaultVal = dTotal; }
-            else if(tipo === 'gas') { promptMsg = "⛽ LITROS:"; defaultVal = DB.fuel; }
-            else if(tipo === 'extra-km') { promptMsg = "⚡ KM EXTRA:"; defaultVal = dExtra; }
+
+            if(tipo === 'km') { promptMsg = "🛣️ AJUSTE MANUAL DE KM:"; defaultVal = dTotal; }
+            else if(tipo === 'gas') { promptMsg = "⛽ LITROS EN TANQUE:"; defaultVal = DB.fuel; }
+            else if(tipo === 'extra-km') { promptMsg = "⚡ KM EXTRA (MANUAL):"; defaultVal = dExtra; }
 
             let n = parseFloat(prompt(promptMsg, defaultVal));
+            
             if(!isNaN(n)) { 
                 if(tipo === 'km') {
                     let diferenciaKm = n - dTotal; 
-                    if(diferenciaKm > 0) DB.fuel -= (diferenciaKm * DB.factor);
+                    if(diferenciaKm > 0) {
+                        let consumoPrueba = diferenciaKm * DB.factor;
+                        DB.fuel -= consumoPrueba; 
+                    }
                     dTotal = n; 
                 } 
                 else if(tipo === 'extra-km') {
                     let diferenciaEx = n - dExtra;
-                    if(diferenciaEx > 0) DB.fuel -= (diferenciaEx * DB.factor);
+                    if(diferenciaEx > 0) {
+                        let consumoEx = diferenciaEx * DB.factor;
+                        DB.fuel -= consumoEx;
+                    }
                     dExtra = n;
                 }
                 else { DB.fuel = n; } 
@@ -379,15 +378,25 @@
                         <div class="color-gas">⛽<br>${r.gas}</div>
                         <div class="color-money">💵<br>$${r.money}</div>
                     </div>
+                    <div class="card-extra-fix">
+                        <b style="color:#f0f; font-size:0.8em;">⚡ MODO EXTRA (FIJO)</b>
+                        <div class="grid-4-jinetes" style="font-size:0.9em;">
+                            <div class="color-km">🛣️<br>${r.extra ? r.extra.km : '0.000'}</div>
+                            <div class="color-time">⏱️<br>${r.extra ? r.extra.time : '00:00:00'}</div>
+                            <div class="color-gas">⛽<br>${r.extra ? r.extra.gas : '0.00'}</div>
+                            <div class="color-money">💵<br>$${r.extra ? r.extra.money : '0.00'}</div>
+                        </div>
+                    </div>
                 </div>
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
         function resetRango(p) {
-            if(confirm(`¿Resetear resumen?`)) {
+            if(confirm(`¿Desea poner en CERO el resumen?`)) {
                 DB[p] = {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()};
-                actualizarUI(); abrirHistorial();
+                actualizarUI();
+                abrirHistorial();
             }
         }
 
@@ -409,7 +418,7 @@
             cerrarModales();
         }
 
-        function borrarReg(i){ if(confirm("¿Borrar?")){ DB.registros.splice(i,1); abrirHistorial(); } }
+        function borrarReg(i){ if(confirm("¿Borrar este registro?")){ DB.registros.splice(i,1); abrirHistorial(); } }
         function cerrarModales(){ document.querySelectorAll('.full-modal').forEach(m => m.style.display = 'none'); }
         function toggleExtra(){ extraActivo = !extraActivo; actualizarUI(); }
         function abrirGPS(){ document.getElementById('modal-gps').style.display = 'block'; }
