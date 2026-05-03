@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V6.2 - MULTISERVICIOS ANATO SMG</title>
+    <title>LUCY ANATO V6.3 - MULTISERVICIOS ANATO SMG</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -49,8 +49,8 @@
         .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; position: relative; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; margin-top: 5px; }
 
-        /* Estilo para la etiqueta del mapa */
-        .map-label { background: rgba(0,0,0,0.8); border: 1px solid #0f0; border-radius: 5px; padding: 5px; color: #fff; font-size: 11px; min-width: 100px; }
+        /* Estilo para la etiqueta del mapa mejorada */
+        .map-label { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 10px; padding: 8px; color: #fff; font-size: 12px; min-width: 120px; box-shadow: 0 0 10px #0f0; }
     </style>
 </head>
 <body>
@@ -104,7 +104,6 @@
         <button class="btn-main btn-stop" onclick="cerrarModales()" style="margin-top: 20px; width: 100%;">CERRAR</button>
     </div>
 
-    <!-- ... (Modales GPS y Calibrar se mantienen igual) ... -->
     <div id="modal-gps" class="full-modal">
         <h2 style="text-align: center;">📍 MARCAR DESTINO</h2>
         <input type="text" id="url-maps" placeholder="10.123, -67.123" style="width:100%; padding:15px; font-size:1.2em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
@@ -130,14 +129,12 @@
         const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
         L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
 
-        // ▼▼▼ INICIALIZACIÓN DE DB CON FECHAS DE TOPE ▼▼▼
         let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
             registros: [], factor: 0.05, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}, 
             quince: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}, 
             mes: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}
         };
-        // ▲▲▲ FINALIZA: INICIALIZACIÓN DE DB ▲▲▲
 
         let estado = "parado", extraActivo = false, clienteActual = "Sin Cliente", equipoActual = "Servicio";
         let dTotal = 0, dExtra = 0, tTotal = 0, tExtra = 0, cronoMaestro, ultimaPos = null;
@@ -171,50 +168,67 @@
             localStorage.setItem('lucy_v61_anato', JSON.stringify(DB));
         }
 
-        // ▼▼▼ COMIENZA: ETIQUETA INTELIGENTE EN EL MAPA (IDA Y VUELTA) ▼▼▼
+        // ▼▼▼ COMIENZA: ETIQUETAS INTERACTIVAS CON EDICIÓN/BORRADO ▼▼▼
         function pausarRuta() {
             if(estado === "rodando") {
                 estado = "pausado";
                 document.getElementById('btn-pause').innerText = "REANUDAR ▶️";
-                equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA?", "Nevera") || "Servicio";
+                equipoActual = prompt("🔧 ¿QUÉ EQUIPO REPARA? (Nevera, Aire, Moto, etc)", "Nevera") || "Servicio";
                 clienteActual = prompt("👤 NOMBRE DEL CLIENTE:", "Sr. Juan") || "Sin Nombre";
                 
                 let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
                 let markerPos = marker.getLatLng();
                 
-                // Cálculos para la etiqueta
-                let kmIda = dTotal;
-                let kmVuelta = dTotal; // Estimación 1:1
-                let kmTotalServicio = kmIda + kmVuelta;
-                let gasServicio = kmTotalServicio * DB.factor;
-                let moneyServicio = gasServicio * 0.5;
-
-                let contenidoEtiqueta = `
-                    <div class="map-label">
-                        <b>${iconEmoji} ${clienteActual}</b><br>
-                        🛣️ Ida: ${kmIda.toFixed(2)} km<br>
-                        🔄 Vuelta: ${kmVuelta.toFixed(2)} km<br>
-                        🚩 Total: ${kmTotalServicio.toFixed(2)} km<br>
-                        ⛽ Gas: ${gasServicio.toFixed(2)} L<br>
-                        💵 Costo: $${moneyServicio.toFixed(2)}
-                    </div>
-                `;
-
-                let customIcon = L.divIcon({
-                    html: `<div class="bouncing-icon">${iconEmoji}</div>`,
-                    className: 'custom-div-icon', iconSize: [40, 40]
-                });
-
-                L.marker([markerPos.lat, markerPos.lng], {icon: customIcon})
-                    .addTo(layerDestino)
-                    .bindPopup(contenidoEtiqueta).openPopup();
+                crearMarcadorCliente(markerPos.lat, markerPos.lng, clienteActual, equipoActual, iconEmoji, dTotal);
 
             } else {
                 estado = "rodando";
                 document.getElementById('btn-pause').innerText = "PAUSA ⏸";
             }
         }
-        // ▲▲▲ FINALIZA: ETIQUETA EN EL MAPA ▲▲▲
+
+        function crearMarcadorCliente(lat, lng, nombre, equipo, emoji, kmIda) {
+            let kmVuelta = kmIda;
+            let kmTotal = kmIda + kmVuelta;
+            let gasS = kmTotal * DB.factor;
+            let costS = gasS * 0.5;
+
+            let customIcon = L.divIcon({
+                html: `<div class="bouncing-icon">${emoji}</div><div style="color:#0f0; font-weight:900; text-shadow:2px 2px #000; font-size:10px; text-align:center;">${nombre}</div>`,
+                className: 'custom-div-icon', iconSize: [50, 50]
+            });
+
+            let m = L.marker([lat, lng], {icon: customIcon}).addTo(layerDestino);
+
+            // Contenido desplegable (Solo al tocar)
+            let popCont = `
+                <div class="map-label">
+                    <b style="color:#0f0;">${emoji} ${nombre}</b><br>
+                    🛠️ ${equipo}<br><hr>
+                    🛣️ Ida: ${kmIda.toFixed(2)} km<br>
+                    🔄 Vuelta: ${kmVuelta.toFixed(2)} km<br>
+                    🚩 Total: ${kmTotal.toFixed(2)} km<br>
+                    ⛽ Gas: ${gasS.toFixed(2)} L<br>
+                    💵 Costo: $${costS.toFixed(2)}
+                </div>`;
+            m.bindPopup(popCont);
+
+            // SISTEMA DE PRESIÓN LARGA (3 SEG) PARA ELIMINAR O EDITAR
+            let timer;
+            m.on('mousedown touchstart', (e) => {
+                timer = setTimeout(() => {
+                    let op = prompt("⚙️ GESTIÓN DE ETIQUETA:\n1. Editar Nombre\n2. Eliminar Marcador\nEscribe el número:");
+                    if(op === "1") {
+                        let nuevo = prompt("Nuevo nombre:", nombre);
+                        if(nuevo) { m.remove(); crearMarcadorCliente(lat, lng, nuevo, equipo, emoji, kmIda); }
+                    } else if(op === "2") {
+                        if(confirm("¿Borrar este marcador del mapa?")) m.remove();
+                    }
+                }, 3000);
+            });
+            m.on('mouseup mouseleave touchend', () => clearTimeout(timer));
+        }
+        // ▲▲▲ FINALIZA: ETIQUETAS INTERACTIVAS ▲▲▲
 
         function controlRuta(){
             if(estado === "parado"){
@@ -226,32 +240,39 @@
             } else { if(confirm("¿Cerrar ruta y guardar en registro?")){ finalizarYGuardar(); } }
         }
 
-        // ▼▼▼ COMIENZA: FINALIZAR Y GUARDAR (VINCULACIÓN HÍBRIDA REGISTROS) ▼▼▼
+        // ▼▼▼ COMIENZA: REPARACIÓN DE SUMAS TOTALES (EXTRA + CLIENTE) ▼▼▼
         function finalizarYGuardar(){
-            let cons = dTotal * DB.factor;
-            let cExtra = dExtra * DB.factor;
-            
-            // Inyectamos los datos del viaje (sean reales o manuales) a los históricos
+            // CALCULAMOS LOS GRAN TOTALES PARA QUE NADA SE PIERDA
+            let granTotalKM = dTotal; // dTotal ya incluye dExtra si se usó ajusteManual('extra-km')
+            let granTotalGas = dTotal * DB.factor;
+            let granTotalMoney = granTotalGas * 0.5;
+            let granTotalTime = tTotal + (extraActivo ? 0 : tExtra); // Evitar doble suma si ya rodaba
+
+            // Inyectamos la suma unificada a los históricos de 7, 15 y 30 días
             ['siete', 'quince', 'mes'].forEach(per => {
-                DB[per].km += dTotal;
-                DB[per].gas += cons;
-                DB[per].money += (cons * 0.5);
-                // El tiempo ya se suma segundo a segundo en el cronómetro maestro
+                DB[per].km += granTotalKM;
+                DB[per].gas += granTotalGas;
+                DB[per].money += granTotalMoney;
+                // El tiempo de rodaje ya se suma segundo a segundo, pero aseguramos el del extra
             });
 
+            // Guardamos el registro detallado
             DB.registros.unshift({
                 cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
-                km: dTotal.toFixed(3), time: formatTime(tTotal), gas: cons.toFixed(2), money: (cons * 0.5).toFixed(2),
+                km: dTotal.toFixed(3), 
+                time: formatTime(tTotal), 
+                gas: (dTotal * DB.factor).toFixed(2), 
+                money: (dTotal * DB.factor * 0.5).toFixed(2),
                 extra: { 
                     km: dExtra.toFixed(3), 
                     time: formatTime(tExtra), 
-                    gas: cExtra.toFixed(2), 
-                    money: (cExtra * 0.5).toFixed(2) 
+                    gas: (dExtra * DB.factor).toFixed(2), 
+                    money: (dExtra * DB.factor * 0.5).toFixed(2) 
                 }
             });
             resetTodo();
         }
-        // ▲▲▲ FINALIZA: VINCULACIÓN HÍBRIDA REGISTROS ▲▲▲
+        // ▲▲▲ FINALIZA: REPARACIÓN DE SUMAS ▲▲▲
 
         function resetTodo(){
             clearInterval(cronoMaestro); dTotal=0; tTotal=0; dExtra=0; tExtra=0; estado="parado"; extraActivo=false;
@@ -268,7 +289,6 @@
                     tTotal++;
                     ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
                 }
-                
                 if(extraActivo) {
                     tExtra++;
                     if(estado !== "rodando") {
@@ -288,18 +308,14 @@
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
-                    
                     DB.fuel -= consumoInst; 
-                    
-                    // Nota: Los históricos de GPS real ya se sumaban aquí, 
-                    // la vinculación híbrida ahora asegura que lo manual también se sume al "Finalizar".
                     actualizarUI();
                 }
             }
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
-        // ▼▼▼ COMIENZA: AJUSTE MANUAL HÍBRIDO (CASA Y MODO EXTRA) ▼▼▼
+        // ▼▼▼ COMIENZA: AJUSTE MANUAL CON RESTA DE TANQUE AUTOMÁTICA ▼▼▼
         function ajusteManual(tipo){
             let promptMsg = "";
             let defaultVal = 0;
@@ -323,18 +339,16 @@
                     let diferenciaEx = n - dExtra;
                     if(diferenciaEx > 0) {
                         let consumoEx = diferenciaEx * DB.factor;
-                        DB.fuel -= consumoEx;
-                        dTotal += diferenciaEx; // El extra también suma al total del viaje
+                        DB.fuel -= consumoEx; // AHORA SÍ DESCUENTA DEL TANQUE AUTOMÁTICAMENTE
+                        dTotal += diferenciaEx; 
                     }
                     dExtra = n;
                 }
-                else { 
-                    DB.fuel = n; 
-                } 
+                else { DB.fuel = n; } 
             }
             actualizarUI();
         }
-        // ▲▲▲ FINALIZA: AJUSTE MANUAL HÍBRIDO ▲▲▲
+        // ▲▲▲ FINALIZA: AJUSTE MANUAL ▲▲▲
 
         function formatTime(s){
             let h = Math.floor(s / 3600);
@@ -343,7 +357,6 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
-        // ▼▼▼ COMIENZA: HISTORIAL CON FECHAS DE TOPE ▼▼▼
         function abrirHistorial(){
             const titulos = { 'siete': '7 DÍAS', 'quince': '15 DÍAS', 'mes': '30 DÍAS' };
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
@@ -359,7 +372,7 @@
                     </div>
                 </div>
             `).join('');
-            // ... (resto del listado de registros se mantiene igual)
+            
             document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span style="position:absolute; right:10px; top:10px; cursor:pointer;" onclick="borrarReg(${i})">🗑️</span>
@@ -383,11 +396,9 @@
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
-        // ▲▲▲ FINALIZA: HISTORIAL CON FECHAS DE TOPE ▲▲▲
 
         function resetRango(p) {
-            const tit = { 'siete': '7 días', 'quince': '15 días', 'mes': '30 días' };
-            if(confirm(`¿Amo, desea poner en CERO el resumen de ${tit[p]}?`)) {
+            if(confirm(`¿Amo, desea poner en CERO el resumen?`)) {
                 DB[p] = {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()};
                 actualizarUI();
                 abrirHistorial();
