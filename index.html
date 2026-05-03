@@ -12,7 +12,7 @@
         /* PANELES SUPERIORES */
         .top-panels { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .row-panels { display: flex; justify-content: space-between; gap: 8px; }
-        .panel-data { background: rgba(0,0,0,0.9); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
+        .panel-data { background: rgba(0,0,0,0.85); border: 2px solid #0f0; border-radius: 12px; padding: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,255,0,0.3); backdrop-filter: blur(5px); }
         
         /* COLORES SENSORES */
         .color-km { color: #ffeb3b !important; } 
@@ -36,7 +36,7 @@
         .extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 5px; font-size: 0.7em; font-weight: 900; }
         
         .side-hud { position: absolute; right: 10px; bottom: 120px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
-        .hud-btn { width: 55px; height: 55px; background: #111; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .hud-btn { width: 55px; height: 55px; background: rgba(17, 17, 17, 0.9); border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         
         .bottom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 94%; display: flex; gap: 10px; z-index: 1000; }
         .btn-main { flex: 1; padding: 18px; border-radius: 15px; border: none; font-weight: 900; font-size: 1em; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -119,15 +119,27 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let map = L.map('map', {zoomControl: false}).setView([10.168867, -67.926840], 16);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        // --- CONFIGURACIÓN DE MAPA GOOGLE HÍBRIDO (TECHOS + CALLES) ---
+        let map = L.map('map', {zoomControl: false}).setView([10.168867, -67.926840], 18);
+        
+        // Capa Híbrida de Google Maps
+        L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3']
+        }).addTo(map);
         
         let layerDestino = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
 
-        const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
-        L.marker([10.168867, -67.926840], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios ANATO S.M.G");
+        // Marcador Sede Oficial ANATO
+        const iconAnato = L.divIcon({ 
+            html: '<div style="font-size:25px; filter: drop-shadow(0 0 5px #0f0);">🏠</div>', 
+            className: 'anato-home', 
+            iconSize: [30, 30] 
+        });
+        L.marker([10.168867, -67.926840], {icon: iconAnato}).addTo(map).bindPopup("<b style='color:#000;'>Sede Multiservicios ANATO S.M.G</b>");
 
+        // --- LÓGICA DE BASE DE DATOS (INTACTA) ---
         let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
             registros: [], factor: 0.05, fuel: 15.0,
             siete: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}, 
@@ -183,7 +195,6 @@
             }
         }
 
-        // ▼▼▼ MEJORA: ETIQUETAS INTERACTIVAS (CLICK Y PRESIÓN LARGA) ▼▼▼
         function crearMarcadorCliente(lat, lng, nombre, equipo, emoji, kmIda) {
             let kmVuelta = kmIda;
             let kmTotal = kmIda + kmVuelta;
@@ -219,7 +230,7 @@
                     } else if(op === "2") {
                         if(confirm("¿Borrar este marcador del mapa?")) m.remove();
                     }
-                }, 3000); // 3 SEGUNDOS DE PRESIÓN LARGA
+                }, 3000); 
             });
             m.on('mouseup mouseleave touchend', () => clearTimeout(timer));
         }
@@ -234,21 +245,17 @@
             } else { if(confirm("¿Cerrar ruta y guardar en registro?")){ finalizarYGuardar(); } }
         }
 
-        // ▼▼▼ REPARACIÓN: SUMA UNIFICADA SIN MAQUILLAJE EN PANEL FRONTAL ▼▼▼
         function finalizarYGuardar(){
-            // CALCULAMOS TOTALES REALES (CLIENTE + EXTRA)
             let totalKmReal = dTotal + dExtra; 
             let totalGasReal = totalKmReal * DB.factor;
             let totalMoneyReal = totalGasReal * 0.5;
 
-            // ACTUALIZAR REGISTROS HISTÓRICOS
             ['siete', 'quince', 'mes'].forEach(per => {
                 DB[per].km += totalKmReal;
                 DB[per].gas += totalGasReal;
                 DB[per].money += totalMoneyReal;
             });
 
-            // GUARDAR FICHA DE LA RUTA
             DB.registros.unshift({
                 cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), 
@@ -306,7 +313,6 @@
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
-        // ▼▼▼ REPARACIÓN: AJUSTE MANUAL SIN ENSUCIAR EL PANEL FRONTAL ▼▼▼
         function ajusteManual(tipo){
             let promptMsg = "";
             let defaultVal = 0;
@@ -330,8 +336,7 @@
                     let diferenciaEx = n - dExtra;
                     if(diferenciaEx > 0) {
                         let consumoEx = diferenciaEx * DB.factor;
-                        DB.fuel -= consumoEx; // DESCUENTO INMEDIATO DEL TANQUE
-                        // NO SUMAMOS A dTotal AQUÍ PARA EVITAR EL MAQUILLAJE FRONTAL
+                        DB.fuel -= consumoEx;
                     }
                     dExtra = n;
                 }
