@@ -308,7 +308,7 @@
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
                 // SENSIBILIDAD: Solo suma si se movió al menos 1 metro (0.001 km)
-                if(dist >= 0.00003){
+                if(dist >= 0.00004){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
