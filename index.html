@@ -300,7 +300,7 @@
         // --- MOTOR GPS RECALIBRADO V6.4 --- 300
         navigator.geolocation.watchPosition(pos => { // linea 301 aquiiiiiiiiiiii 
             // FILTRO DE PRECISIÓN: Si el error es mayor a 20m, ignoramos la señal (Filtro de Ruido)
-            if (pos.coords.accuracy > 20) return;
+            if (pos.coords.accuracy > 40) return;
 
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
@@ -308,12 +308,13 @@
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
                 // SENSIBILIDAD: Solo suma si se movió al menos 1 metro (0.001 km)
-                if(dist >= 0.001){
+                if(dist >= 0.0002){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
                     DB.fuel -= consumoInst; 
                     actualizarUI();
+                  dibujarMigaDePan(p[0], p[1]);  
                 }
             }
             ultimaPos = p;
@@ -416,41 +417,50 @@
 function procesarUbicacion() {
     let input = document.getElementById('url-maps').value;
     
-    // Filtro para capturar coordenadas (latitud, longitud)
-    let match = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+    // FILTRO INTELIGENTE: Busca cualquier par de números decimales en el texto
+    let match = input.match(/(-?\d+\.\d+)\s*[,\s]\s*(-?\d+\.\d+)/);
     
     if(match) {
         let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
-        
-        // Limpiamos flechas o destinos anteriores para no amontonar
         layerDestino.clearLayers();
         
-        // 1. Ponemos el marcador del cliente
         let pDestino = [lat, lon];
-        L.marker(pDestino).addTo(layerDestino).bindPopup("📍 DESTINO CLIENTE").openPopup();
+        let pActual = marker.getLatLng();
         
-        // 2. CREAMOS LA RUTA GUÍA (Línea azul clarito punteada)
-        // Esta es la que usted usará de referencia mientras Lucy marca su ruta real
-        let pActual = marker.getLatLng(); // Su posición actual en el mapa
-        let puntosRuta = [pActual, pDestino];
+        // CÁLCULOS PARA LA SÚPER ETIQUETA (Basados en línea recta teórica)
+        let distIda = map.distance(pActual, pDestino) / 1000;
+        let distTotal = distIda * 2;
+        let gasEstimada = distTotal * DB.factor;
+        let costoEstimado = gasEstimada * 0.5;
+
+        // 1. Marcador con la SÚPER ETIQUETA (Lo que usted pidió: Ida, Vuelta, Total)
+        let m = L.marker(pDestino).addTo(layerDestino);
+        let popCont = `
+            <div class="map-label">
+                <b style="color:#00e5ff;">📍 DESTINO DETECTADO</b><br><hr>
+                路 <b>Ida:</b> ${distIda.toFixed(2)} km ($${(distIda * DB.factor * 0.5).toFixed(2)})<br>
+                🔄 <b>Vuelta:</b> ${distIda.toFixed(2)} km ($${(distIda * DB.factor * 0.5).toFixed(2)})<br>
+                🚩 <b>TOTAL:</b> ${distTotal.toFixed(2)} km<br>
+                ⛽ <b>GAS:</b> ${gasEstimada.toFixed(2)} L<br>
+                💵 <b>COSTO TOTAL:</b> $${costoEstimado.toFixed(2)}
+            </div>`;
+        m.bindPopup(popCont).openPopup();
         
-        let rutaGuia = L.polyline(puntosRuta, {
-            color: '#00e5ff', // Azul clarito
-            weight: 4, 
-            opacity: 0.5,
-            dashArray: '10, 10', // La hace punteada para que sepa que es la guía
+        // 2. LÍNEA AZUL DE GUÍA (Estilo WhatsApp/Maps)
+        let rutaGuia = L.polyline([pActual, pDestino], {
+            color: '#00e5ff',
+            weight: 5,
+            opacity: 0.6,
+            dashArray: '10, 15',
             lineJoin: 'round'
         }).addTo(layerDestino);
 
-        // 3. Ajustamos la vista para ver el trayecto completo
         map.fitBounds(rutaGuia.getBounds(), {padding: [50, 50]});
-        
         cerrarModales();
     } else {
-        alert("❌ Formato incorrecto. Pegue las coordenadas así: 10.123, -67.123");
+        alert("❌ Error: No encontré coordenadas. Asegúrese de que el mensaje tenga latitud y longitud.");
     }
 }
-
         function calibrarYRestar(){
             let val = parseFloat(document.getElementById('input-descuento-litros').value);
             if(!isNaN(val)) { DB.fuel -= val; actualizarUI(); }
