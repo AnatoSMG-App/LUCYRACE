@@ -297,12 +297,18 @@
             }, 1000);
         }
 
+        // --- MOTOR GPS RECALIBRADO V6.4 ---
         navigator.geolocation.watchPosition(pos => {
+            // FILTRO DE PRECISIÓN: Si el error es mayor a 20m, ignoramos la señal (Filtro de Ruido)
+            if (pos.coords.accuracy > 20) return;
+
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
+
             if(estado === "rodando" && ultimaPos){
                 let dist = map.distance(ultimaPos, p) / 1000;
-                if(dist > 0.0005){
+                // SENSIBILIDAD: Solo suma si se movió al menos 1 metro (0.001 km)
+                if(dist >= 0.001){
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
@@ -311,7 +317,11 @@
                 }
             }
             ultimaPos = p;
-        }, null, {enableHighAccuracy:true});
+        }, null, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000
+        });
 
         function ajusteManual(tipo){
             let promptMsg = "";
