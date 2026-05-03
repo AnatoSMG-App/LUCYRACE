@@ -410,17 +410,46 @@
             }
         }
 
-        function procesarUbicacion() {
-            let input = document.getElementById('url-maps').value;
-            let match = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
-            if(match) {
-                let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
-                layerDestino.clearLayers();
-                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO").openPopup();
-                map.setView([lat, lon], 16);
-                cerrarModales();
-            }
-        }
+        // ============================================================
+// BLOQUE: PROCESADOR DE DESTINOS (GUÍA VISUAL DE RUTA)
+// ============================================================
+function procesarUbicacion() {
+    let input = document.getElementById('url-maps').value;
+    
+    // Filtro para capturar coordenadas (latitud, longitud)
+    let match = input.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+    
+    if(match) {
+        let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
+        
+        // Limpiamos flechas o destinos anteriores para no amontonar
+        layerDestino.clearLayers();
+        
+        // 1. Ponemos el marcador del cliente
+        let pDestino = [lat, lon];
+        L.marker(pDestino).addTo(layerDestino).bindPopup("📍 DESTINO CLIENTE").openPopup();
+        
+        // 2. CREAMOS LA RUTA GUÍA (Línea azul clarito punteada)
+        // Esta es la que usted usará de referencia mientras Lucy marca su ruta real
+        let pActual = marker.getLatLng(); // Su posición actual en el mapa
+        let puntosRuta = [pActual, pDestino];
+        
+        let rutaGuia = L.polyline(puntosRuta, {
+            color: '#00e5ff', // Azul clarito
+            weight: 4, 
+            opacity: 0.5,
+            dashArray: '10, 10', // La hace punteada para que sepa que es la guía
+            lineJoin: 'round'
+        }).addTo(layerDestino);
+
+        // 3. Ajustamos la vista para ver el trayecto completo
+        map.fitBounds(rutaGuia.getBounds(), {padding: [50, 50]});
+        
+        cerrarModales();
+    } else {
+        alert("❌ Formato incorrecto. Pegue las coordenadas así: 10.123, -67.123");
+    }
+}
 
         function calibrarYRestar(){
             let val = parseFloat(document.getElementById('input-descuento-litros').value);
