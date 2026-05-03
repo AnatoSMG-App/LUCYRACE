@@ -218,7 +218,6 @@
             actualizarUI();
         }
 
-        // CORRECCIÓN 1: El tiempo del EXTRA ahora suma a los acumulados siempre que esté activo
         function iniciarCronometro(){
             if(cronoMaestro) clearInterval(cronoMaestro);
             cronoMaestro = setInterval(() => {
@@ -229,7 +228,6 @@
                 
                 if(extraActivo) {
                     tExtra++;
-                    // Si no está ya sumando por 'rodando', sumamos al acumulado
                     if(estado !== "rodando") {
                         ['siete', 'quince', 'mes'].forEach(p => DB[p].time++);
                     }
@@ -247,7 +245,10 @@
                     dTotal += dist;
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
-                    DB.fuel -= consumoInst;
+                    
+                    // VINCULACIÓN AUTOMÁTICA EN RUTA REAL
+                    DB.fuel -= consumoInst; 
+                    
                     ['siete', 'quince', 'mes'].forEach(per => {
                         DB[per].km += dist;
                         DB[per].gas += consumoInst;
@@ -259,9 +260,22 @@
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
+        // MODIFICACIÓN PARA VINCULACIÓN HÍBRIDA (PRUEBAS EN CASA)
         function ajusteManual(tipo){
             let n = parseFloat(prompt(tipo === 'km' ? "🛣️ AJUSTE MANUAL DE KM:" : "⛽ LITROS EN TANQUE:", tipo === 'km' ? dTotal : DB.fuel));
-            if(!isNaN(n)) { if(tipo === 'km') dTotal = n; else DB.fuel = n; }
+            if(!isNaN(n)) { 
+                if(tipo === 'km') {
+                    // Si ajustas KM manualmente, calculamos el consumo de ese ajuste
+                    let diferenciaKm = n - dTotal; 
+                    if(diferenciaKm > 0) {
+                        let consumoPrueba = diferenciaKm * DB.factor;
+                        DB.fuel -= consumoPrueba; // RESTA AUTOMÁTICA DEL TANQUE
+                    }
+                    dTotal = n; 
+                } else { 
+                    DB.fuel = n; 
+                } 
+            }
             actualizarUI();
         }
 
@@ -272,7 +286,6 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
-        // CORRECCIÓN 2: Botones de reset independientes añadidos al mapa de resumen
         function abrirHistorial(){
             const titulos = { 'siete': '7 DÍAS', 'quince': '15 DÍAS', 'mes': '30 DÍAS' };
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
@@ -314,7 +327,6 @@
             document.getElementById('pantalla-historial').style.display = 'block';
         }
 
-        // Nueva función de reset para los acumulados
         function resetRango(p) {
             const tit = { 'siete': '7 días', 'quince': '15 días', 'mes': '30 días' };
             if(confirm(`¿Amo, desea poner en CERO el resumen de ${tit[p]}?`)) {
