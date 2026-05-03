@@ -300,7 +300,7 @@
         // --- MOTOR GPS RECALIBRADO V6.4 --- 300
         navigator.geolocation.watchPosition(pos => { // linea 301 aquiiiiiiiiiiii 
             // FILTRO DE PRECISIÓN: Si el error es mayor a 20m, ignoramos la señal (Filtro de Ruido)
-            if (pos.coords.accuracy > 50) return;
+            if (pos.coords.accuracy > 30) return;
 
             let p = [pos.coords.latitude, pos.coords.longitude];
             marker.setLatLng(p);
