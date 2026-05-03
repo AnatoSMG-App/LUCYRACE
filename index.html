@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUCY ANATO V6.1 - MULTISERVICIOS ANATO SMG</title>
+    <title>LUCY ANATO V6.2 - MULTISERVICIOS ANATO SMG</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
@@ -48,6 +48,9 @@
         .card-extra-fix { background: rgba(255, 0, 255, 0.1); border: 1px solid #ff00ff; border-radius: 8px; padding: 8px; margin-top: 10px; }
         .barra-resumen { background: #1a1a1a; border: 1px solid #0f0; border-radius: 6px; padding: 8px; font-size: 0.75em; margin-bottom: 5px; position: relative; }
         .grid-4-jinetes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; margin-top: 5px; }
+
+        /* Estilo para la etiqueta del mapa */
+        .map-label { background: rgba(0,0,0,0.8); border: 1px solid #0f0; border-radius: 5px; padding: 5px; color: #fff; font-size: 11px; min-width: 100px; }
     </style>
 </head>
 <body>
@@ -56,7 +59,7 @@
     <div id="extra-float">
         <span style="font-size: 0.8em; font-weight: 900; color: #fff;">⚡ MANIOBRA EXTRA</span>
         <div class="extra-grid">
-            <div class="color-km">🛣️<br><span id="ex-km">0.000</span></div>
+            <div class="color-km" onclick="ajusteManual('extra-km')">🛣️<br><span id="ex-km">0.000</span></div>
             <div class="color-time">⏱️<br><span id="ex-time">00:00:00</span></div>
             <div class="color-gas">⛽<br><span id="ex-gas">00.00</span></div>
             <div class="color-money">💵<br>$<span id="ex-money">0.00</span></div>
@@ -101,6 +104,7 @@
         <button class="btn-main btn-stop" onclick="cerrarModales()" style="margin-top: 20px; width: 100%;">CERRAR</button>
     </div>
 
+    <!-- ... (Modales GPS y Calibrar se mantienen igual) ... -->
     <div id="modal-gps" class="full-modal">
         <h2 style="text-align: center;">📍 MARCAR DESTINO</h2>
         <input type="text" id="url-maps" placeholder="10.123, -67.123" style="width:100%; padding:15px; font-size:1.2em; background:#111; color:#fff; border:2px solid #0f0; border-radius: 10px;">
@@ -126,10 +130,14 @@
         const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
         L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
 
+        // ▼▼▼ INICIALIZACIÓN DE DB CON FECHAS DE TOPE ▼▼▼
         let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
             registros: [], factor: 0.05, fuel: 15.0,
-            siete: {km:0, time:0, gas:0, money:0}, quince: {km:0, time:0, gas:0, money:0}, mes: {km:0, time:0, gas:0, money:0}
+            siete: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}, 
+            quince: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}, 
+            mes: {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()}
         };
+        // ▲▲▲ FINALIZA: INICIALIZACIÓN DE DB ▲▲▲
 
         let estado = "parado", extraActivo = false, clienteActual = "Sin Cliente", equipoActual = "Servicio";
         let dTotal = 0, dExtra = 0, tTotal = 0, tExtra = 0, cronoMaestro, ultimaPos = null;
@@ -163,6 +171,7 @@
             localStorage.setItem('lucy_v61_anato', JSON.stringify(DB));
         }
 
+        // ▼▼▼ COMIENZA: ETIQUETA INTELIGENTE EN EL MAPA (IDA Y VUELTA) ▼▼▼
         function pausarRuta() {
             if(estado === "rodando") {
                 estado = "pausado";
@@ -172,16 +181,40 @@
                 
                 let iconEmoji = iconosEquipo[equipoActual.toLowerCase()] || "📍";
                 let markerPos = marker.getLatLng();
+                
+                // Cálculos para la etiqueta
+                let kmIda = dTotal;
+                let kmVuelta = dTotal; // Estimación 1:1
+                let kmTotalServicio = kmIda + kmVuelta;
+                let gasServicio = kmTotalServicio * DB.factor;
+                let moneyServicio = gasServicio * 0.5;
+
+                let contenidoEtiqueta = `
+                    <div class="map-label">
+                        <b>${iconEmoji} ${clienteActual}</b><br>
+                        🛣️ Ida: ${kmIda.toFixed(2)} km<br>
+                        🔄 Vuelta: ${kmVuelta.toFixed(2)} km<br>
+                        🚩 Total: ${kmTotalServicio.toFixed(2)} km<br>
+                        ⛽ Gas: ${gasServicio.toFixed(2)} L<br>
+                        💵 Costo: $${moneyServicio.toFixed(2)}
+                    </div>
+                `;
+
                 let customIcon = L.divIcon({
-                    html: `<div class="bouncing-icon">${iconEmoji}<br><span style="font-size:10px; color:#fff; background:rgba(0,0,0,0.5); padding:2px;">${clienteActual}</span></div>`,
+                    html: `<div class="bouncing-icon">${iconEmoji}</div>`,
                     className: 'custom-div-icon', iconSize: [40, 40]
                 });
-                L.marker([markerPos.lat, markerPos.lng], {icon: customIcon}).addTo(layerDestino);
+
+                L.marker([markerPos.lat, markerPos.lng], {icon: customIcon})
+                    .addTo(layerDestino)
+                    .bindPopup(contenidoEtiqueta).openPopup();
+
             } else {
                 estado = "rodando";
                 document.getElementById('btn-pause').innerText = "PAUSA ⏸";
             }
         }
+        // ▲▲▲ FINALIZA: ETIQUETA EN EL MAPA ▲▲▲
 
         function controlRuta(){
             if(estado === "parado"){
@@ -193,10 +226,19 @@
             } else { if(confirm("¿Cerrar ruta y guardar en registro?")){ finalizarYGuardar(); } }
         }
 
+        // ▼▼▼ COMIENZA: FINALIZAR Y GUARDAR (VINCULACIÓN HÍBRIDA REGISTROS) ▼▼▼
         function finalizarYGuardar(){
             let cons = dTotal * DB.factor;
             let cExtra = dExtra * DB.factor;
             
+            // Inyectamos los datos del viaje (sean reales o manuales) a los históricos
+            ['siete', 'quince', 'mes'].forEach(per => {
+                DB[per].km += dTotal;
+                DB[per].gas += cons;
+                DB[per].money += (cons * 0.5);
+                // El tiempo ya se suma segundo a segundo en el cronómetro maestro
+            });
+
             DB.registros.unshift({
                 cliente: clienteActual, equipo: equipoActual, fecha: new Date().toLocaleString(),
                 km: dTotal.toFixed(3), time: formatTime(tTotal), gas: cons.toFixed(2), money: (cons * 0.5).toFixed(2),
@@ -209,6 +251,7 @@
             });
             resetTodo();
         }
+        // ▲▲▲ FINALIZA: VINCULACIÓN HÍBRIDA REGISTROS ▲▲▲
 
         function resetTodo(){
             clearInterval(cronoMaestro); dTotal=0; tTotal=0; dExtra=0; tExtra=0; estado="parado"; extraActivo=false;
@@ -246,38 +289,52 @@
                     if(extraActivo) dExtra += dist;
                     let consumoInst = dist * DB.factor;
                     
-                    // VINCULACIÓN AUTOMÁTICA EN RUTA REAL
                     DB.fuel -= consumoInst; 
                     
-                    ['siete', 'quince', 'mes'].forEach(per => {
-                        DB[per].km += dist;
-                        DB[per].gas += consumoInst;
-                        DB[per].money += (consumoInst * 0.5);
-                    });
+                    // Nota: Los históricos de GPS real ya se sumaban aquí, 
+                    // la vinculación híbrida ahora asegura que lo manual también se sume al "Finalizar".
                     actualizarUI();
                 }
             }
             ultimaPos = p;
         }, null, {enableHighAccuracy:true});
 
-        // MODIFICACIÓN PARA VINCULACIÓN HÍBRIDA (PRUEBAS EN CASA)
+        // ▼▼▼ COMIENZA: AJUSTE MANUAL HÍBRIDO (CASA Y MODO EXTRA) ▼▼▼
         function ajusteManual(tipo){
-            let n = parseFloat(prompt(tipo === 'km' ? "🛣️ AJUSTE MANUAL DE KM:" : "⛽ LITROS EN TANQUE:", tipo === 'km' ? dTotal : DB.fuel));
+            let promptMsg = "";
+            let defaultVal = 0;
+
+            if(tipo === 'km') { promptMsg = "🛣️ AJUSTE MANUAL DE KM:"; defaultVal = dTotal; }
+            else if(tipo === 'gas') { promptMsg = "⛽ LITROS EN TANQUE:"; defaultVal = DB.fuel; }
+            else if(tipo === 'extra-km') { promptMsg = "⚡ KM EXTRA (MANUAL):"; defaultVal = dExtra; }
+
+            let n = parseFloat(prompt(promptMsg, defaultVal));
+            
             if(!isNaN(n)) { 
                 if(tipo === 'km') {
-                    // Si ajustas KM manualmente, calculamos el consumo de ese ajuste
                     let diferenciaKm = n - dTotal; 
                     if(diferenciaKm > 0) {
                         let consumoPrueba = diferenciaKm * DB.factor;
-                        DB.fuel -= consumoPrueba; // RESTA AUTOMÁTICA DEL TANQUE
+                        DB.fuel -= consumoPrueba; 
                     }
                     dTotal = n; 
-                } else { 
+                } 
+                else if(tipo === 'extra-km') {
+                    let diferenciaEx = n - dExtra;
+                    if(diferenciaEx > 0) {
+                        let consumoEx = diferenciaEx * DB.factor;
+                        DB.fuel -= consumoEx;
+                        dTotal += diferenciaEx; // El extra también suma al total del viaje
+                    }
+                    dExtra = n;
+                }
+                else { 
                     DB.fuel = n; 
                 } 
             }
             actualizarUI();
         }
+        // ▲▲▲ FINALIZA: AJUSTE MANUAL HÍBRIDO ▲▲▲
 
         function formatTime(s){
             let h = Math.floor(s / 3600);
@@ -286,12 +343,14 @@
             return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         }
 
+        // ▼▼▼ COMIENZA: HISTORIAL CON FECHAS DE TOPE ▼▼▼
         function abrirHistorial(){
             const titulos = { 'siete': '7 DÍAS', 'quince': '15 DÍAS', 'mes': '30 DÍAS' };
             document.getElementById('contenedor-resumen').innerHTML = ['siete', 'quince', 'mes'].map(p => `
                 <div class="barra-resumen">
                     <span onclick="resetRango('${p}')" style="position:absolute; right:10px; top:8px; color:red; cursor:pointer; font-weight:bold; font-size:1.2em;">❌</span>
-                    <b style="color:#fff;">RESUMEN ${titulos[p]}:</b>
+                    <b style="color:#fff;">RESUMEN ${titulos[p]}:</b><br>
+                    <small style="color:#0f0;">Desde: ${DB[p].inicio || 'Inicio'}</small>
                     <div class="grid-4-jinetes">
                         <div class="color-km">🛣️<br>${DB[p].km.toFixed(3)}</div>
                         <div class="color-time">⏱️<br>${formatTime(DB[p].time)}</div>
@@ -300,19 +359,17 @@
                     </div>
                 </div>
             `).join('');
-
+            // ... (resto del listado de registros se mantiene igual)
             document.getElementById('lista-registros').innerHTML = DB.registros.map((r, i) => `
                 <div class="card-hist">
                     <span style="position:absolute; right:10px; top:10px; cursor:pointer;" onclick="borrarReg(${i})">🗑️</span>
                     <b class="color-money">${iconosEquipo[r.equipo.toLowerCase()] || '📍'} ${r.cliente}</b> <small style="color:#aaa;">${r.fecha}</small>
-                    
                     <div class="grid-4-jinetes">
                         <div class="color-km">🛣️<br>${r.km}</div>
                         <div class="color-time">⏱️<br>${r.time}</div>
                         <div class="color-gas">⛽<br>${r.gas}</div>
                         <div class="color-money">💵<br>$${r.money}</div>
                     </div>
-
                     <div class="card-extra-fix">
                         <b style="color:#f0f; font-size:0.8em;">⚡ MODO EXTRA (FIJO)</b>
                         <div class="grid-4-jinetes" style="font-size:0.9em;">
@@ -326,11 +383,12 @@
             `).join('');
             document.getElementById('pantalla-historial').style.display = 'block';
         }
+        // ▲▲▲ FINALIZA: HISTORIAL CON FECHAS DE TOPE ▲▲▲
 
         function resetRango(p) {
             const tit = { 'siete': '7 días', 'quince': '15 días', 'mes': '30 días' };
             if(confirm(`¿Amo, desea poner en CERO el resumen de ${tit[p]}?`)) {
-                DB[p] = {km:0, time:0, gas:0, money:0};
+                DB[p] = {km:0, time:0, gas:0, money:0, inicio: new Date().toLocaleDateString()};
                 actualizarUI();
                 abrirHistorial();
             }
@@ -342,7 +400,7 @@
             if(match) {
                 let lat = parseFloat(match[1]), lon = parseFloat(match[2]);
                 layerDestino.clearLayers();
-                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO").showPopup();
+                L.marker([lat, lon]).addTo(layerDestino).bindPopup("DESTINO").openPopup();
                 map.setView([lat, lon], 16);
                 cerrarModales();
             }
