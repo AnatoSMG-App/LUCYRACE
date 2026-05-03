@@ -297,8 +297,8 @@
             }, 1000);
         }
 
-        // --- MOTOR GPS RECALIBRADO V6.4 ---
-        navigator.geolocation.watchPosition(pos => {
+        // --- MOTOR GPS RECALIBRADO V6.4 --- 300
+        navigator.geolocation.watchPosition(pos => { // linea 301 aquiiiiiiiiiiii 
             // FILTRO DE PRECISIÓN: Si el error es mayor a 20m, ignoramos la señal (Filtro de Ruido)
             if (pos.coords.accuracy > 20) return;
 
