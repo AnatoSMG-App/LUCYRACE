@@ -119,14 +119,14 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let map = L.map('map', {zoomControl: false}).setView([10.174, -67.915], 16);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        let map = L.map('map', {zoomControl: false}).setView([10.168867, -67.926840], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
         let layerDestino = L.layerGroup().addTo(map);
         let marker = L.circleMarker([0,0], {radius: 9, color: '#fff', fillColor: '#0f0', fillOpacity: 1, weight: 3}).addTo(map);
 
         const iconAnato = L.divIcon({ html: '❄️', className: 'anato-home', iconSize: [30, 30] });
-        L.marker([10.174, -67.915], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios Anato SMG");
+        L.marker([10.168867, -67.926840], {icon: iconAnato}).addTo(map).bindPopup("Multiservicios ANATO S.M.G");
 
         let DB = JSON.parse(localStorage.getItem('lucy_v61_anato')) || {
             registros: [], factor: 0.05, fuel: 15.0,
@@ -201,7 +201,7 @@
                 <div class="map-label">
                     <b style="color:#0f0;">${emoji} ${nombre}</b><br>
                     🛠️ ${equipo}<br><hr>
-                    🛣️ Ida: ${kmIda.toFixed(2)} km<br>
+                    路 Ida: ${kmIda.toFixed(2)} km<br>
                     🔄 Vuelta: ${kmVuelta.toFixed(2)} km<br>
                     🚩 Total: ${kmTotal.toFixed(2)} km<br>
                     ⛽ Gas: ${gasS.toFixed(2)} L<br>
